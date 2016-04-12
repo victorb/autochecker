@@ -1,5 +1,6 @@
 #! /usr/bin/env node
 const os = require('os')
+const readline = require('readline')
 const url = require('url')
 const join = require('path').join
 
@@ -12,9 +13,10 @@ const tar = require('tar-fs')
 
 const logGreen = (msg) => console.log(colors.green(msg))
 const logRed = (msg) => console.log(colors.red(msg))
-const logBlue = (msg) => console.log(colors.blue(msg))
-const logYellow = (msg) => console.log(colors.yellow(msg))
-const logMagenta = (msg) => console.log(colors.magenta(msg))
+const clearScreen = () => {
+  readline.cursorTo(process.stdout, 0, 0)
+  readline.clearScreenDown(process.stdout)
+}
 
 if (process.env.DOCKER_HOST === undefined) {
   logRed('environment variable DOCKER_HOST looks empty')
@@ -58,8 +60,26 @@ const TMP_DIR = os.tmpdir()
 // Initialize docker
 const docker = new Docker(DOCKER_CONFIG)
 
+// Setup logging
+var linesToLog = {}
+const createLogger = (line_id, single_view) => {
+  return (msg) => {
+    if (single_view) {
+      console.log(line_id + '\t| ' + msg)
+    } else {
+      linesToLog[line_id] = msg
+      Object.keys(linesToLog).forEach((line, index) => {
+        const lineToLog = linesToLog[line]
+        readline.cursorTo(process.stdout, 0, index + 1)
+        process.stdout.write(line + '\t- ' + lineToLog + '\n')
+      })
+    }
+  }
+}
+
 // TODO fix callback hell
 const runTestForVersion = (version, show_output) => {
+  const logger = createLogger(version, show_output)
   return (callback) => {
     const new_directory = TMP_DIR + '/autochecker_' + PROJECT_NAME + version
 
@@ -81,7 +101,7 @@ const runTestForVersion = (version, show_output) => {
       // TODO remove sync operations like these
       fs.writeFileSync(new_directory + '/Dockerfile', DOCKERFILE_TEMPLATE.replace('$VERSION', version))
 
-      logMagenta(version + '\t| Pulling base image for version')
+      logger('Pulling base image')
       docker.pull(`${BASE_IMAGE}:${version}`, (err, stream) => {
         // TODO extract error handling
         if (err) {
@@ -93,7 +113,7 @@ const runTestForVersion = (version, show_output) => {
             ignoreFiles: ['.gitignore', '.dockerignore']
           })
           const img_name_with_version = IMAGE_NAME.replace('$VERSION', version)
-          logYellow(version + '\t| Building image')
+          logger('Building testing image')
           docker.buildImage(tarStream, {
             t: img_name_with_version
           }, (error, output) => {
@@ -102,7 +122,7 @@ const runTestForVersion = (version, show_output) => {
               callback(error, 1)
             }
             docker.modem.followProgress(output, () => {
-              logBlue(version + '\t| finished building, running tests...')
+              logger('Running application tests')
               docker.run(img_name_with_version, TEST_COMMAND, show_output ? process.stdout : null, (err, data, container) => {
                 if (err) {
                   logRed(version + '\t| Something went wrong in running container...')
@@ -110,7 +130,7 @@ const runTestForVersion = (version, show_output) => {
                 }
                 // TODO implement proper cleanup
                 // fs.remove(new_directory)
-                logGreen(version + '\t| Done running tests for version ' + version + '!')
+                logger('Done running all the tests!')
                 callback(null, {statusCode: data.StatusCode, version: version})
               })
             }, (chunk) => {
@@ -170,7 +190,7 @@ const default_versions_to_test = [
 ]
 
 const testVersions = (versions) => {
-  console.log('Running tests in ' + versions.length + ' different NodeJS versions')
+  console.log('autochecker', 'Running tests in ' + versions.length + ' different NodeJS versions')
   async.parallel(versions, (err, results) => {
     if (err) {
       logRed('Something went wrong in running tests...')
@@ -179,6 +199,8 @@ const testVersions = (versions) => {
     var any_errors = false
     var successes = results.filter((result) => result.statusCode === 0).length
     var failures = results.filter((result) => result.statusCode !== 0).length
+    clearScreen()
+    console.log()
     console.log('== Results (Success/Fail ' + successes + '/' + failures + ') ==')
     results.forEach((result) => {
       if (result.statusCode !== 0) {
@@ -198,6 +220,7 @@ const testVersions = (versions) => {
 
 // Start testing everything
 // TODO extract this into cli.js and make proper
+clearScreen()
 if (process.argv[2] === undefined) {
   testVersions(default_versions_to_test.map((version) => runTestForVersion(version, false)))
 } else {
@@ -211,6 +234,8 @@ if (process.argv[2] === undefined) {
         logRed('Something went wrong in running tests...')
         throw new Error(err)
       }
+      clearScreen()
+      console.log()
       console.log('== Results ==')
       if (result.statusCode !== 0) {
         logRed('The tests did not pass on version ' + result.version)
