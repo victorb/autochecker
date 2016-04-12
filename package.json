@@ -1,0 +1,27 @@
+{
+  "name": "autochecker",
+  "version": "0.1.0",
+  "description": "Test your JavaScript modules simultaneously in 32 different versions of NodeJS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"NO TESTS YET! Ironic huh?\";exit 1"
+  },
+  "bin": {
+    "autochecker": "index.js"
+  },
+  "keywords": [
+    "testing",
+    "versions",
+    "nodejs"
+  ],
+  "author": "Victor Bjelkholm <victorbjelkholm@gmail.com> (https://www.github.com/victorbjelkholm)",
+  "license": "MIT",
+  "dependencies": {
+    "async": "2.0.0-rc.3",
+    "colors": "1.1.2",
+    "dockerode": "2.2.10",
+    "fs-extra": "0.26.7",
+    "git-rev-sync": "1.5.0",
+    "tar-fs": "1.12.0"
+  }
+}
