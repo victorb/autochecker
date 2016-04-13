@@ -4,7 +4,9 @@ autochecker helps you test your JavaScript modules in many different versions of
 
 Works well with CI as well!
 
-![Demonstration of functionality](./demo.gif)
+<p align="center">
+  <img src="./demo.gif" alt="Demonstration of functionality">
+</p>
 
 ## Requirements
 
