@@ -56,3 +56,6 @@ Variable `$VERSION` will be replaced by autochecker. More information about alpi
 and additional tools at 
 [docker-alpine](https://github.com/gliderlabs/docker-alpine/blob/master/docs/usage.md) and
 [alpine-node](https://github.com/mhart/alpine-node).
+
+Aside from adding libraries to the container, the custom template can be useful to avoid running postinstall
+hooks. Just use `RUN npm install --ignore-scripts` instead.
