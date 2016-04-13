@@ -24,19 +24,28 @@ if (process.env.DOCKER_HOST === undefined) {
 }
 
 // CONFIG
-const DOCKER_PROTOCOL = 'https'
-const parsed_url = url.parse(process.env.DOCKER_HOST)
-const DOCKER_HOST = parsed_url.hostname
-const DOCKER_PORT = parsed_url.port
-const CERT_PATH = process.env.DOCKER_CERT_PATH
-const DOCKERFILE_TEMPLATE = `
-FROM mhart/alpine-node:$VERSION
+function getDockerTemplate() {
+  const DockerTemplateFile = join(process.cwd(), 'DockerTemplate')
+  if (fs.existsSync(DockerTemplateFile)) {
+    console.log('Using docker template file', DockerTemplateFile)
+    return fs.readFileSync(DockerTemplateFile, 'utf8')
+  }
+  const DEFAULT_DOCKER_TEMPLATE = `FROM mhart/alpine-node:$VERSION
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 COPY package.json .
 RUN npm install
 COPY . .
 `
+  return DEFAULT_DOCKER_TEMPLATE
+}
+
+const DOCKER_PROTOCOL = 'https'
+const parsed_url = url.parse(process.env.DOCKER_HOST)
+const DOCKER_HOST = parsed_url.hostname
+const DOCKER_PORT = parsed_url.port
+const CERT_PATH = process.env.DOCKER_CERT_PATH
+const DOCKERFILE_TEMPLATE = getDockerTemplate()
 
 const DIRECTORY_TO_TEST = process.cwd()
 const TEST_COMMAND = ['npm', 'test']
