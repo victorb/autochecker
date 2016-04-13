@@ -15,6 +15,7 @@ Works well with CI as well!
 * Two environment variables, `DOCKER_HOST` and `DOCKER_CERT_PATH` (comes by default with docker-machine)
 
 `DOCKER_HOST` should look similar to this: `tcp://192.168.99.100:2376`
+
 `DOCKER_CERT_PATH` should look similar to this: `/Users/victor/.docker/machine/machines/default`
 
 ## Installation
