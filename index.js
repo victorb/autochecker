@@ -26,11 +26,10 @@ if (process.env.DOCKER_HOST === undefined) {
 }
 
 // CONFIG
-function getDockerTemplate() {
-  const DockerTemplateFile = join(process.cwd(), 'DockerTemplate')
-  if (fs.existsSync(DockerTemplateFile)) {
-    console.log('Using docker template file', DockerTemplateFile)
-    return fs.readFileSync(DockerTemplateFile, 'utf8')
+const getDockerTemplate = () => {
+  const dockerTemplate = join(process.cwd(), 'DockerTemplate')
+  if (fs.existsSync(dockerTemplate)) {
+    return fs.readFileSync(dockerTemplate, 'utf8')
   }
   const DEFAULT_DOCKER_TEMPLATE = `FROM mhart/alpine-node:$VERSION
 RUN mkdir -p /usr/src/app
