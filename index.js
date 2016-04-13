@@ -138,7 +138,7 @@ const runTestForVersion = (version, show_output) => {
                 }
                 // TODO implement proper cleanup
                 // fs.remove(new_directory)
-                logger('Done running all the tests!')
+                logger(colors.green('Done running all the tests!'))
                 callback(null, {statusCode: data.StatusCode, version: version})
               })
             }, (chunk) => {
