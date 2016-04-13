@@ -32,3 +32,24 @@ In `package.json`:
 	"prepublish": "autochecker 0.10 0.12 4.0 5.0"
 }
 ```
+
+## Custom Docker file template
+
+You can specify custom Docker file template if you need additional tools installed, for
+example if you need `git`, create a file in the project `DockerTemplate` with the following
+
+```
+FROM mhart/alpine-node:$VERSION
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+COPY package.json .
+# Adding extra tools
+RUN apk add --update git
+RUN npm install
+COPY . .
+```
+
+Variable `$VERSION` will be replaced by autochecker. More information about alpine images
+and additional tools at 
+[docker-alpine](https://github.com/gliderlabs/docker-alpine/blob/master/docs/usage.md) and
+[alpine-node](https://github.com/mhart/alpine-node).
