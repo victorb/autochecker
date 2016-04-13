@@ -36,9 +36,9 @@ In `package.json`:
 }
 ```
 
-## Custom Docker file template
+## Custom Dockerfile template
 
-You can specify custom Docker file template if you need additional tools installed, for
+You can specify custom Dockerfile template if you need additional tools installed, for
 example if you need `git`, create a file in the project `DockerTemplate` with the following
 
 ```
