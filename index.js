@@ -13,8 +13,11 @@ const tar = require('tar-fs')
 
 const logGreen = (msg) => console.log(colors.green(msg))
 const logRed = (msg) => console.log(colors.red(msg))
-const clearScreen = () => {
-  readline.cursorTo(process.stdout, 0, 0)
+const clearScreen = (from) => {
+  if (from === undefined) {
+    from = 0
+  }
+  readline.cursorTo(process.stdout, 0, from)
   readline.clearScreenDown(process.stdout)
 }
 const handleErr = (version, step, err, callback) => {
@@ -78,6 +81,7 @@ const docker = new Docker(DOCKER_CONFIG)
 var linesToLog = {}
 const createLogger = (line_id, single_view) => {
   return (msg) => {
+    clearScreen(1)
     if (single_view) {
       console.log(msg)
     } else {
