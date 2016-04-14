@@ -17,6 +17,12 @@ const clearScreen = () => {
   readline.cursorTo(process.stdout, 0, 0)
   readline.clearScreenDown(process.stdout)
 }
+const handleErr = (version, step, err, callback) => {
+  if (err) {
+    logRed(version + '\t| Something went wrong in ' + step)
+    callback(err, 1)
+  }
+}
 
 if (process.env.DOCKER_HOST === undefined) {
   logRed('environment variable DOCKER_HOST looks empty')
@@ -73,7 +79,7 @@ var linesToLog = {}
 const createLogger = (line_id, single_view) => {
   return (msg) => {
     if (single_view) {
-      console.log(line_id + '\t| ' + msg)
+      console.log(msg)
     } else {
       linesToLog[line_id] = msg
       Object.keys(linesToLog).forEach((line, index) => {
@@ -85,74 +91,94 @@ const createLogger = (line_id, single_view) => {
   }
 }
 
+// Main logic
+// const followProgress = () => {}
+const copyApplicationToTempLocation = (path, new_path) => {
+  return new Promise((resolve) => {
+    fs.copy(path, new_path, {
+      filter: (file) => {
+        return file.indexOf('node_modules') !== -1 || file.indexOf('.git') !== -1
+      }
+    }, resolve)
+  })
+}
+const writeApplicationDockerfile = (path, version, dockerfile) => {
+  return new Promise((resolve) => {
+    fs.writeFile(path + '/Dockerfile', dockerfile.replace('$VERSION', version), resolve)
+  })
+}
+const pullBaseImage = (base_image, version) => {
+  return new Promise((resolve) => {
+    docker.pull(`${base_image}:${version}`, (err, stream) => {
+      resolve({err, stream})
+    })
+  })
+}
+const buildImage = (path, image_name, version) => {
+  return new Promise((resolve) => {
+    const tarStream = tar.pack(path)
+    const built_image_name = image_name.replace('$VERSION', version)
+    docker.buildImage(tarStream, {t: built_image_name}, (err, stream) => {
+      resolve({err, stream, built_image_name})
+    })
+  })
+}
+const runContainer = (image_name, test_cmd, show_output) => {
+  return new Promise((resolve) => {
+    docker.run(image_name, test_cmd, show_output ? process.stdout : null, (err, data) => {
+      resolve({err, data})
+    })
+  })
+}
+
 // TODO fix callback hell
 const runTestForVersion = (version, show_output) => {
   const logger = createLogger(version, show_output)
   return (callback) => {
     const new_directory = TMP_DIR + '/autochecker_' + PROJECT_NAME + version
 
-    fs.copy(DIRECTORY_TO_TEST, new_directory, {filter: (file) => {
-      var should_copy = true
-      // TODO find a way to reuse node_module but rebuild if necessary
-      if (file.indexOf('node_modules') !== -1) {
-        should_copy = false
-      }
-      if (file.indexOf('.git') !== -1) {
-        should_copy = false
-      }
-      return should_copy
-    }}, (err) => {
-      if (err) {
-        logRed(version + '\t| Something went wrong in copying files...')
-        callback(err, 1)
-      }
-      // TODO remove sync operations like these
-      fs.writeFileSync(new_directory + '/Dockerfile', DOCKERFILE_TEMPLATE.replace('$VERSION', version))
-
-      logger('Pulling base image')
-      docker.pull(`${BASE_IMAGE}:${version}`, (err, stream) => {
-        // TODO extract error handling
-        if (err) {
-          logRed(version + '\t| Something went wrong in pulling image...')
-          callback(err, 1)
-        }
-        docker.modem.followProgress(stream, () => {
-          const tarStream = tar.pack(new_directory, {
-            ignoreFiles: ['.gitignore', '.dockerignore']
-          })
-          const img_name_with_version = IMAGE_NAME.replace('$VERSION', version)
-          logger('Building testing image')
-          docker.buildImage(tarStream, {
-            t: img_name_with_version
-          }, (error, output) => {
-            if (error) {
-              logRed(version + '\t| Something went wrong in building image...')
-              callback(error, 1)
-            }
-            docker.modem.followProgress(output, () => {
-              logger('Running application tests')
-              docker.run(img_name_with_version, TEST_COMMAND, show_output ? process.stdout : null, (err, data, container) => {
-                if (err) {
-                  logRed(version + '\t| Something went wrong in running container...')
-                  callback(err, 1)
+    logger('Copying files')
+    copyApplicationToTempLocation(DIRECTORY_TO_TEST, new_directory).then((err) => {
+      handleErr(version, 'copying files', err, callback)
+      logger('Writing Dockerfile')
+      writeApplicationDockerfile(new_directory, version, DOCKERFILE_TEMPLATE).then((err) => {
+        handleErr(version, 'writing Dockerfile', err, callback)
+        logger('Pulling base image')
+        pullBaseImage(BASE_IMAGE, version).then((res) => {
+          const err = res.err
+          const pull_stream = res.stream
+          handleErr(version, 'pulling base image', err, callback)
+          docker.modem.followProgress(pull_stream, () => {
+            logger('Building image')
+            buildImage(new_directory, IMAGE_NAME, version).then((res) => {
+              const err = res.err
+              const build_stream = res.stream
+              const built_image_name = res.built_image_name
+              handleErr(version, 'building image', err, callback)
+              docker.modem.followProgress(build_stream, () => {
+                logger('Running application tests')
+                runContainer(built_image_name, TEST_COMMAND, show_output).then((res) => {
+                  const err = res.err
+                  const data = res.data
+                  handleErr(version, 'running application tests', err, callback)
+                  // TODO implement proper cleanup
+                  // fs.remove(new_directory)
+                  logger(colors.green('Done running all the tests!'))
+                  callback(null, {statusCode: data.StatusCode, version: version})
+                })
+              }, (chunk) => {
+                // Building container
+                if (show_output) {
+                  process.stdout.write('Docker > ' + chunk.stream)
                 }
-                // TODO implement proper cleanup
-                // fs.remove(new_directory)
-                logger(colors.green('Done running all the tests!'))
-                callback(null, {statusCode: data.StatusCode, version: version})
               })
-            }, (chunk) => {
-              // Building container
-              if (show_output) {
-                process.stdout.write(version + '\t| ' + chunk.stream)
-              }
             })
+          }, (chunk) => {
+            // Pulling image
+            if (show_output) {
+              console.log('Docker > ' + chunk.status)
+            }
           })
-        }, (chunk) => {
-          // Pulling image
-          if (show_output) {
-            console.log(version + '\t| ' + chunk.status)
-          }
         })
       })
     })
@@ -236,7 +262,7 @@ if (process.argv[2] === undefined) {
   if (to_test.length > 1) {
     testVersions(to_test.map((version) => runTestForVersion(version, false)))
   } else {
-    console.log('Running tests in 1 NodeJS version')
+    console.log('Running tests in version ' + to_test[0] + ' only')
     runTestForVersion(to_test[0], true)((err, result) => {
       if (err) {
         logRed('Something went wrong in running tests...')
