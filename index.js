@@ -111,10 +111,17 @@ const writeApplicationDockerfile = (path, version, dockerfile) => {
     fs.writeFile(path + '/Dockerfile', dockerfile.replace('$VERSION', version), resolve)
   })
 }
-const pullBaseImage = (base_image, version) => {
+const pullBaseImage = (base_image, version, show_output) => {
   return new Promise((resolve) => {
     docker.pull(`${base_image}:${version}`, (err, stream) => {
-      resolve({err, stream})
+      stream.on('data', (chunk) => {
+        if (show_output) {
+          console.log('docker pull > ' + JSON.parse(chunk).status)
+        }
+      })
+      stream.on('end', () => {
+        resolve(err)
+      })
     })
   })
 }
@@ -144,44 +151,36 @@ const runTestForVersion = (version, show_output) => {
     logger('Copying files')
     copyApplicationToTempLocation(DIRECTORY_TO_TEST, new_directory).then((err) => {
       handleErr(version, 'copying files', err, callback)
+
       logger('Writing Dockerfile')
       writeApplicationDockerfile(new_directory, version, DOCKERFILE_TEMPLATE).then((err) => {
         handleErr(version, 'writing Dockerfile', err, callback)
         logger('Pulling base image')
-        pullBaseImage(BASE_IMAGE, version).then((res) => {
-          const err = res.err
-          const pull_stream = res.stream
+        pullBaseImage(BASE_IMAGE, version, show_output).then((err) => {
           handleErr(version, 'pulling base image', err, callback)
-          docker.modem.followProgress(pull_stream, () => {
-            logger('Building image')
-            buildImage(new_directory, IMAGE_NAME, version).then((res) => {
-              const err = res.err
-              const build_stream = res.stream
-              const built_image_name = res.built_image_name
-              handleErr(version, 'building image', err, callback)
-              docker.modem.followProgress(build_stream, () => {
-                logger('Running application tests')
-                runContainer(built_image_name, TEST_COMMAND, show_output).then((res) => {
-                  const err = res.err
-                  const data = res.data
-                  handleErr(version, 'running application tests', err, callback)
-                  // TODO implement proper cleanup
-                  // fs.remove(new_directory)
-                  logger(colors.green('Done running all the tests!'))
-                  callback(null, {statusCode: data.StatusCode, version: version})
-                })
-              }, (chunk) => {
-                // Building container
-                if (show_output) {
-                  process.stdout.write('Docker > ' + chunk.stream)
-                }
+          logger('Building image')
+          buildImage(new_directory, IMAGE_NAME, version).then((res) => {
+            const err = res.err
+            const build_stream = res.stream
+            const built_image_name = res.built_image_name
+            handleErr(version, 'building image', err, callback)
+            docker.modem.followProgress(build_stream, () => {
+              logger('Running application tests')
+              runContainer(built_image_name, TEST_COMMAND, show_output).then((res) => {
+                const err = res.err
+                const data = res.data
+                handleErr(version, 'running application tests', err, callback)
+                // TODO implement proper cleanup
+                // fs.remove(new_directory)
+                logger(colors.green('Done running all the tests!'))
+                callback(null, {statusCode: data.StatusCode, version: version})
               })
+            }, (chunk) => {
+              // Building container
+              if (show_output) {
+                process.stdout.write('Docker > ' + chunk.stream)
+              }
             })
-          }, (chunk) => {
-            // Pulling image
-            if (show_output) {
-              console.log('Docker > ' + chunk.status)
-            }
           })
         })
       })
