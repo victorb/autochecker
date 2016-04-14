@@ -80,16 +80,20 @@ const docker = new Docker(DOCKER_CONFIG)
 // Setup logging
 var linesToLog = {}
 const createLogger = (line_id, single_view) => {
-  return (msg) => {
-    clearScreen(1)
+  return (msg, color) => {
+    if (color === undefined) {
+      color = (str) => str
+    }
     if (single_view) {
-      console.log(msg)
+      console.log(color(msg))
     } else {
-      linesToLog[line_id] = msg
+      clearScreen(1)
+      linesToLog[line_id] = {msg, color}
       Object.keys(linesToLog).forEach((line, index) => {
-        const lineToLog = linesToLog[line]
+        const lineToLog = linesToLog[line].msg
+        const colorToLog = linesToLog[line].color
         readline.cursorTo(process.stdout, 0, index + 1)
-        process.stdout.write(line + '\t- ' + lineToLog + '\n')
+        process.stdout.write(colorToLog(line + '\t- ' + lineToLog + '\n'))
       })
     }
   }
@@ -116,7 +120,7 @@ const pullBaseImage = (base_image, version, show_output) => {
     docker.pull(`${base_image}:${version}`, (err, stream) => {
       stream.on('data', (chunk) => {
         if (show_output) {
-          console.log('docker pull > ' + JSON.parse(chunk).status)
+          console.log(colors.cyan('docker pull > ' + JSON.parse(chunk).status))
         }
       })
       stream.on('end', () => {
@@ -155,17 +159,17 @@ const runTestForVersion = (version, show_output) => {
       logger('Writing Dockerfile')
       writeApplicationDockerfile(new_directory, version, DOCKERFILE_TEMPLATE).then((err) => {
         handleErr(version, 'writing Dockerfile', err, callback)
-        logger('Pulling base image')
+        logger('Pulling base image', colors.yellow)
         pullBaseImage(BASE_IMAGE, version, show_output).then((err) => {
           handleErr(version, 'pulling base image', err, callback)
-          logger('Building image')
+          logger('Building image', colors.magenta)
           buildImage(new_directory, IMAGE_NAME, version).then((res) => {
             const err = res.err
             const build_stream = res.stream
             const built_image_name = res.built_image_name
             handleErr(version, 'building image', err, callback)
             docker.modem.followProgress(build_stream, () => {
-              logger('Running application tests')
+              logger('Running application tests', colors.blue)
               runContainer(built_image_name, TEST_COMMAND, show_output).then((res) => {
                 const err = res.err
                 const data = res.data
@@ -178,7 +182,7 @@ const runTestForVersion = (version, show_output) => {
             }, (chunk) => {
               // Building container
               if (show_output) {
-                process.stdout.write('Docker > ' + chunk.stream)
+                process.stdout.write(colors.cyan('docker build > ' + chunk.stream))
               }
             })
           })
@@ -257,12 +261,13 @@ const testVersions = (versions) => {
 
 // Start testing everything
 // TODO extract this into cli.js and make proper
-clearScreen()
 if (process.argv[2] === undefined) {
+  clearScreen()
   testVersions(default_versions_to_test.map((version) => runTestForVersion(version, false)))
 } else {
   const to_test = process.argv.slice(2)
   if (to_test.length > 1) {
+    clearScreen()
     testVersions(to_test.map((version) => runTestForVersion(version, false)))
   } else {
     console.log('Running tests in version ' + to_test[0] + ' only')
@@ -271,7 +276,6 @@ if (process.argv[2] === undefined) {
         logRed('Something went wrong in running tests...')
         throw new Error(err)
       }
-      clearScreen()
       console.log()
       console.log('== Results ==')
       if (result.statusCode !== 0) {
