@@ -36,6 +36,16 @@ In `package.json`:
 }
 ```
 
+## Running
+
+By default, executing `autochecker` will run the tests on all available versions.
+
+You can specify which versions you want to test by adding them in the end of the command:
+
+`autochecker 0.10 0.11 4 5.10.1 latest`
+
+Versions comes from the `mhart/alpine-node` docker image tags
+
 ## Custom Dockerfile template
 
 You can specify custom Dockerfile template if you need additional tools installed, for

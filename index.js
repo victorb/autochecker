@@ -3,7 +3,9 @@ const os = require('os')
 const readline = require('readline')
 const url = require('url')
 const join = require('path').join
+const stream = require('stream')
 
+// External
 const Docker = require('dockerode')
 const fs = require('fs-extra')
 const async = require('async')
@@ -26,6 +28,12 @@ const handleErr = (version, step, err, callback) => {
     callback(err, 1)
   }
 }
+const coloredStdout = new stream.Writable({
+  write: (chunk, encoding, next) => {
+    process.stdout.write(colors.cyan(chunk.toString()))
+    next()
+  }
+})
 
 if (process.env.DOCKER_HOST === undefined) {
   logRed('environment variable DOCKER_HOST looks empty')
@@ -100,7 +108,6 @@ const createLogger = (line_id, single_view) => {
 }
 
 // Main logic
-// const followProgress = () => {}
 const copyApplicationToTempLocation = (path, new_path) => {
   return new Promise((resolve) => {
     fs.copy(path, new_path, {
@@ -117,10 +124,31 @@ const writeApplicationDockerfile = (path, version, dockerfile) => {
 }
 const pullBaseImage = (base_image, version, show_output) => {
   return new Promise((resolve) => {
-    docker.pull(`${base_image}:${version}`, (err, stream) => {
+    // TODO in the future, check if image already exists, and skip pulling
+    const should_pull = true
+    if (should_pull) {
+      docker.pull(`${base_image}:${version}`, (err, stream) => {
+        stream.on('data', (chunk) => {
+          if (show_output) {
+            console.log(colors.cyan('docker pull > ' + JSON.parse(chunk).status))
+          }
+        })
+        stream.on('end', () => {
+          resolve(err)
+        })
+      })
+    } else {
+      resolve(null)
+    }
+  })
+}
+const buildImage = (path, image_name, show_output) => {
+  return new Promise((resolve) => {
+    const tarStream = tar.pack(path)
+    docker.buildImage(tarStream, {t: image_name}, (err, stream) => {
       stream.on('data', (chunk) => {
         if (show_output) {
-          console.log(colors.cyan('docker pull > ' + JSON.parse(chunk).status))
+          process.stdout.write(colors.cyan('docker build > ' + JSON.parse(chunk).stream))
         }
       })
       stream.on('end', () => {
@@ -129,22 +157,26 @@ const pullBaseImage = (base_image, version, show_output) => {
     })
   })
 }
-const buildImage = (path, image_name, version) => {
-  return new Promise((resolve) => {
-    const tarStream = tar.pack(path)
-    const built_image_name = image_name.replace('$VERSION', version)
-    docker.buildImage(tarStream, {t: built_image_name}, (err, stream) => {
-      resolve({err, stream, built_image_name})
-    })
-  })
-}
 const runContainer = (image_name, test_cmd, show_output) => {
   return new Promise((resolve) => {
-    docker.run(image_name, test_cmd, show_output ? process.stdout : null, (err, data) => {
+    const outputter = show_output ? coloredStdout : null
+    docker.run(image_name, test_cmd, outputter, (err, data) => {
       resolve({err, data})
     })
   })
 }
+
+// const executionOrders = [
+//   copyApplicationToTempLocation,
+//   writeApplicationDockerfile,
+//   pullBaseImage,
+//   buildImage,
+//   runContainer
+// ]
+//
+// executeOrders(executeOrders).then((test_exit_code) => {
+//   callback(null, {exit_code: test_exit_code, version})
+// })
 
 // TODO fix callback hell
 const runTestForVersion = (version, show_output) => {
@@ -152,38 +184,32 @@ const runTestForVersion = (version, show_output) => {
   return (callback) => {
     const new_directory = TMP_DIR + '/autochecker_' + PROJECT_NAME + version
 
-    logger('Copying files')
+    logger('Copying files', colors.yellow)
     copyApplicationToTempLocation(DIRECTORY_TO_TEST, new_directory).then((err) => {
       handleErr(version, 'copying files', err, callback)
 
-      logger('Writing Dockerfile')
+      logger('Writing Dockerfile', colors.yellow)
       writeApplicationDockerfile(new_directory, version, DOCKERFILE_TEMPLATE).then((err) => {
         handleErr(version, 'writing Dockerfile', err, callback)
         logger('Pulling base image', colors.yellow)
         pullBaseImage(BASE_IMAGE, version, show_output).then((err) => {
           handleErr(version, 'pulling base image', err, callback)
-          logger('Building image', colors.magenta)
-          buildImage(new_directory, IMAGE_NAME, version).then((res) => {
-            const err = res.err
-            const build_stream = res.stream
-            const built_image_name = res.built_image_name
+          logger('Building image', colors.yellow)
+          const version_image_name = IMAGE_NAME.replace('$VERSION', version)
+          buildImage(new_directory, version_image_name, show_output).then((err) => {
             handleErr(version, 'building image', err, callback)
-            docker.modem.followProgress(build_stream, () => {
-              logger('Running application tests', colors.blue)
-              runContainer(built_image_name, TEST_COMMAND, show_output).then((res) => {
-                const err = res.err
-                const data = res.data
-                handleErr(version, 'running application tests', err, callback)
-                // TODO implement proper cleanup
-                // fs.remove(new_directory)
-                logger(colors.green('Done running all the tests!'))
-                callback(null, {statusCode: data.StatusCode, version: version})
-              })
-            }, (chunk) => {
-              // Building container
+            logger('Running application tests', colors.yellow)
+            runContainer(version_image_name, TEST_COMMAND, show_output).then((res) => {
+              const err = res.err
+              const data = res.data
+              handleErr(version, 'running application tests', err, callback)
+              // TODO implement proper cleanup
+              // fs.remove(new_directory)
               if (show_output) {
-                process.stdout.write(colors.cyan('docker build > ' + chunk.stream))
+                console.log('===========================')
               }
+              logger(colors.green('Done running all the tests!'))
+              callback(null, {statusCode: data.StatusCode, version: version})
             })
           })
         })
@@ -270,7 +296,7 @@ if (process.argv[2] === undefined) {
     clearScreen()
     testVersions(to_test.map((version) => runTestForVersion(version, false)))
   } else {
-    console.log('Running tests in version ' + to_test[0] + ' only')
+    console.log(colors.green('## Running tests in version ' + colors.blue(to_test[0]) + ' only'))
     runTestForVersion(to_test[0], true)((err, result) => {
       if (err) {
         logRed('Something went wrong in running tests...')
