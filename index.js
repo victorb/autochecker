@@ -22,12 +22,6 @@ const clearScreen = (from) => {
   readline.cursorTo(process.stdout, 0, from)
   readline.clearScreenDown(process.stdout)
 }
-const handleErr = (version, step, err, callback) => {
-  if (err) {
-    logRed(version + '\t| Something went wrong in ' + step)
-    callback(err, 1)
-  }
-}
 const coloredStdout = new stream.Writable({
   write: (chunk, encoding, next) => {
     process.stdout.write(colors.cyan(chunk.toString()))
@@ -80,6 +74,8 @@ const DOCKER_CONFIG = {
   key: fs.readFileSync(join(CERT_PATH, 'key.pem'))
 }
 const TMP_DIR = os.tmpdir()
+// TODO implement log levels...
+// const LOG_LEVEL = 'default'
 // END CONFIG
 
 // Initialize docker
@@ -106,13 +102,25 @@ const createLogger = (line_id, single_view) => {
     }
   }
 }
+const createErrorHandler = (version, show_output, callback) => {
+  return (step, err) => {
+    if (err) {
+      if (show_output) {
+        logRed('Something went wrong in ' + step)
+      } else {
+        logRed(version + '\t | Something went wrong in ' + step)
+      }
+      callback(err, 1)
+    }
+  }
+}
 
 // Main logic
 const copyApplicationToTempLocation = (path, new_path) => {
   return new Promise((resolve) => {
     fs.copy(path, new_path, {
       filter: (file) => {
-        return file.indexOf('node_modules') !== -1 || file.indexOf('.git') !== -1
+        return file.indexOf('node_modules') === -1 || file.indexOf('.git') === -1
       }
     }, resolve)
   })
@@ -125,12 +133,12 @@ const writeApplicationDockerfile = (path, version, dockerfile) => {
 const pullBaseImage = (base_image, version, show_output) => {
   return new Promise((resolve) => {
     // TODO in the future, check if image already exists, and skip pulling
-    const should_pull = true
+    const should_pull = false
     if (should_pull) {
       docker.pull(`${base_image}:${version}`, (err, stream) => {
         stream.on('data', (chunk) => {
           if (show_output) {
-            console.log(colors.cyan('docker pull > ' + JSON.parse(chunk).status))
+            console.log(colors.cyan(JSON.parse(chunk).status))
           }
         })
         stream.on('end', () => {
@@ -148,7 +156,7 @@ const buildImage = (path, image_name, show_output) => {
     docker.buildImage(tarStream, {t: image_name}, (err, stream) => {
       stream.on('data', (chunk) => {
         if (show_output) {
-          process.stdout.write(colors.cyan('docker build > ' + JSON.parse(chunk).stream))
+          process.stdout.write(colors.cyan(JSON.parse(chunk).stream))
         }
       })
       stream.on('end', () => {
@@ -180,29 +188,29 @@ const runContainer = (image_name, test_cmd, show_output) => {
 
 // TODO fix callback hell
 const runTestForVersion = (version, show_output) => {
-  const logger = createLogger(version, show_output)
   return (callback) => {
-    const new_directory = TMP_DIR + '/autochecker_' + PROJECT_NAME + version
+    const logger = createLogger(version, show_output)
+    const handleErr = createErrorHandler(version, show_output, callback)
 
+    const new_directory = `${TMP_DIR}/autochecker_${PROJECT_NAME}_${version}`
     logger('Copying files', colors.yellow)
     copyApplicationToTempLocation(DIRECTORY_TO_TEST, new_directory).then((err) => {
-      handleErr(version, 'copying files', err, callback)
-
+      handleErr('copying files', err)
       logger('Writing Dockerfile', colors.yellow)
       writeApplicationDockerfile(new_directory, version, DOCKERFILE_TEMPLATE).then((err) => {
-        handleErr(version, 'writing Dockerfile', err, callback)
+        handleErr('writing Dockerfile', err)
         logger('Pulling base image', colors.yellow)
         pullBaseImage(BASE_IMAGE, version, show_output).then((err) => {
-          handleErr(version, 'pulling base image', err, callback)
+          handleErr('pulling base image', err)
           logger('Building image', colors.yellow)
           const version_image_name = IMAGE_NAME.replace('$VERSION', version)
           buildImage(new_directory, version_image_name, show_output).then((err) => {
-            handleErr(version, 'building image', err, callback)
+            handleErr('building image', err)
             logger('Running application tests', colors.yellow)
             runContainer(version_image_name, TEST_COMMAND, show_output).then((res) => {
               const err = res.err
               const data = res.data
-              handleErr(version, 'running application tests', err, callback)
+              handleErr('running application tests', err)
               // TODO implement proper cleanup
               // fs.remove(new_directory)
               if (show_output) {
@@ -299,8 +307,8 @@ if (process.argv[2] === undefined) {
     console.log(colors.green('## Running tests in version ' + colors.blue(to_test[0]) + ' only'))
     runTestForVersion(to_test[0], true)((err, result) => {
       if (err) {
-        logRed('Something went wrong in running tests...')
-        throw new Error(err)
+        console.log(colors.red(err))
+        process.exit(1)
       }
       console.log()
       console.log('== Results ==')
