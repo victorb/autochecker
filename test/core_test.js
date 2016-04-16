@@ -1,4 +1,4 @@
-/* global describe, it, afterEach */
+/* global describe, it, afterEach, beforeEach */
 const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
@@ -14,6 +14,11 @@ const folderExists = (path) => {
 
 describe('Application Core Logic', () => {
   describe('Copy application', () => {
+    beforeEach(() => {
+      // As a hack, we need to create the .git directory...
+      fs.mkdirsSync(join(__dirname, 'test_project/.git'))
+      fs.mkdirsSync(join(__dirname, 'test_project/node_modules'))
+    })
     afterEach(() => {
       fs.removeSync(join(__dirname, 'tmp_test_project'))
     })
