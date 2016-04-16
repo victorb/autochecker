@@ -116,15 +116,8 @@ const createErrorHandler = (version, show_output, callback) => {
 }
 
 // Main logic
-const copyApplicationToTempLocation = (path, new_path) => {
-  return new Promise((resolve) => {
-    fs.copy(path, new_path, {
-      filter: (file) => {
-        return file.indexOf('node_modules') === -1 || file.indexOf('.git') === -1
-      }
-    }, resolve)
-  })
-}
+const core = require('./core')
+const copyApplicationToTempLocation = core.copyApplicationToTempLocation
 const writeApplicationDockerfile = (path, version, dockerfile) => {
   return new Promise((resolve) => {
     fs.writeFile(path + '/Dockerfile', dockerfile.replace('$VERSION', version), resolve)
