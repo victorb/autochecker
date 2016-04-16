@@ -267,11 +267,11 @@ const testVersions = (versions) => {
     var any_errors = false
     var successes = results.filter((result) => result.statusCode === 0).length
     var failures = results.filter((result) => result.statusCode !== 0).length
-    clearScreen()
     console.log()
     console.log('== Results (Success/Fail ' + successes + '/' + failures + ') ==')
     results.forEach((result) => {
       if (result.statusCode !== 0) {
+        // TODO Also print out the errors themselves
         logRed('The tests did not pass on version ' + result.version)
         any_errors = true
       } else {
@@ -284,6 +284,12 @@ const testVersions = (versions) => {
       process.exit(0)
     }
   })
+}
+
+if (process.argv[2] === 'ls') {
+  console.log('Available versions:')
+  console.log(default_versions_to_test)
+  process.exit(0)
 }
 
 // Start testing everything

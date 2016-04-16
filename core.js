@@ -23,7 +23,7 @@ module.exports = {
         if (err) {
           reject(err.toString())
         } else {
-          resolve()
+          resolve(err)
         }
       })
     })
@@ -42,7 +42,7 @@ module.exports = {
             reject(err.toString())
           }
         } else {
-          resolve()
+          resolve(err)
         }
       })
     })
