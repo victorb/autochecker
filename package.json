@@ -4,7 +4,9 @@
   "description": "Test your JavaScript modules simultaneously in 32 different versions of NodeJS",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"NO TESTS YET! Ironic huh?\";exit 1"
+    "test": "mocha",
+    "test:watch": "mocha --watch --growl",
+    "lint": "standard"
   },
   "bin": {
     "autochecker": "index.js"
@@ -23,5 +25,9 @@
     "fs-extra": "0.26.7",
     "git-rev-sync": "1.5.0",
     "tar-fs": "1.12.0"
+  },
+  "devDependencies": {
+    "mocha": "2.4.5",
+    "standard": "6.0.8"
   }
 }
