@@ -220,7 +220,7 @@ const runTestForVersion = (version, show_output) => {
               if (show_output) {
                 console.log('===========================')
               }
-              logger(colors.green('Done running all the tests!'))
+              logger(data.StatusCode === 0 ? '✅' : '❌')
               callback(null, {statusCode: data.StatusCode, version: version})
             })
           })
@@ -270,7 +270,7 @@ const default_versions_to_test = [
 
 const testVersions = (versions) => {
   console.log('autochecker', 'Running tests in ' + versions.length + ' different NodeJS versions')
-  async.parallel(versions, (err, results) => {
+  async.parallelLimit(versions, process.env.TEST_LIMIT || os.cpus().length, (err, results) => {
     if (err) {
       logRed('Something went wrong in running tests...')
       throw new Error(err)

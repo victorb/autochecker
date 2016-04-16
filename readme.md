@@ -46,6 +46,14 @@ You can specify which versions you want to test by adding them in the end of the
 
 Versions comes from the `mhart/alpine-node` docker image tags
 
+## Setting max running tests
+
+By default, autochecker starts as many testing sessions as `os.cpu().length` would return. 
+
+However, you can overwrite this by providing the TEST_LIMIT environment variable.
+
+Example: `TEST_LIMIT=10 autochecker` to run 10 test sessions at a time
+
 ## Custom Dockerfile template
 
 You can specify custom Dockerfile template if you need additional tools installed, for
@@ -69,3 +77,7 @@ and additional tools at
 
 Aside from adding libraries to the container, the custom template can be useful to avoid running postinstall
 hooks. Just use `RUN npm install --ignore-scripts` instead.
+
+## License
+
+MIT License 2016 - Victor Bjelkholm
