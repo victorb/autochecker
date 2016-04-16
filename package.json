@@ -7,7 +7,7 @@
     "test": "mocha",
     "test:watch": "mocha --watch --growl",
     "lint": "standard",
-    "prepublish": "./index 4 5"
+    "prepublish": "./index.js 4 5"
   },
   "bin": {
     "autochecker": "index.js"
