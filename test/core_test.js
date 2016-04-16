@@ -12,16 +12,31 @@ const folderExists = (path) => {
   return fs.existsSync(join(__dirname, path))
 }
 
+const PACKAGE_FILE = `{
+  "name": "test_project",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"I'm gonna fail...\"; exit 1"
+  },
+  "keywords": [],
+  "license": "MIT"
+}`
+
 describe('Application Core Logic', () => {
+  beforeEach(() => {
+    // Create a example project
+    fs.mkdirsSync(join(__dirname, 'test_project'))
+    fs.writeFileSync(join(__dirname, 'test_project/package.json'), JSON.stringify(PACKAGE_FILE, null, 2))
+    fs.mkdirsSync(join(__dirname, 'test_project/.git'))
+    fs.mkdirsSync(join(__dirname, 'test_project/node_modules'))
+  })
+  afterEach(() => {
+    fs.removeSync(join(__dirname, 'tmp_test_project'))
+    fs.removeSync(join(__dirname, 'test_project'))
+  })
   describe('Copy application', () => {
-    beforeEach(() => {
-      // As a hack, we need to create the .git directory...
-      fs.mkdirsSync(join(__dirname, 'test_project/.git'))
-      fs.mkdirsSync(join(__dirname, 'test_project/node_modules'))
-    })
-    afterEach(() => {
-      fs.removeSync(join(__dirname, 'tmp_test_project'))
-    })
     it('Can copy directory', (done) => {
       // Arrange
       var folder_exists = folderExists('test_project')
@@ -48,7 +63,24 @@ describe('Application Core Logic', () => {
     })
     it('fails if app directory doesnt exists', () => {
       const promise = core.copyApplicationToTempLocation('/holabandola/', join(__dirname, 'tmp_test_project'))
-      return assert.isRejected(promise, /ENOENT: no such file or directory/, 'Promise was fulfilled')
+      return assert.isRejected(promise, /ENOENT: no such file or directory/)
+    })
+  })
+  describe('Write application Dockerfile', () => {
+    it('Can write Dockerfile file to disk', (done) => {
+      core.writeApplicationDockerfile(join(__dirname, 'test_project'), 'myversion', 'FROM dockerfile:$VERSION').then(() => {
+        const contentsOfFile = fs.readFileSync(join(__dirname, 'test_project/Dockerfile'))
+        assert.strictEqual(contentsOfFile.toString(), 'FROM dockerfile:myversion')
+        done()
+      }).catch(done)
+    })
+    it('Fails if directory doesnt exists already', () => {
+      const promise = core.writeApplicationDockerfile('/holabandola', 'myversion', 'FROM dockerfile:$VERSION')
+      return assert.isRejected(promise, /Directory \"\/holabandola\" did not exist/)
+    })
+    it('Fails if Dockerfile doesnt contain $VERSION string', () => {
+      const promise = core.writeApplicationDockerfile(join(__dirname, 'test_project'), 'myversion', 'FROM dockerfile:$DOCKER')
+      return assert.isRejected(promise, /Dockerfile did not contain \$VERSION/)
     })
   })
 })

@@ -27,5 +27,24 @@ module.exports = {
         }
       })
     })
+  },
+  writeApplicationDockerfile: (path, version, dockerfile) => {
+    return new Promise((resolve, reject) => {
+      if (dockerfile.indexOf('$VERSION') === -1) {
+        reject('Dockerfile did not contain $VERSION')
+        return
+      }
+      fs.writeFile(path + '/Dockerfile', dockerfile.replace('$VERSION', version), (err) => {
+        if (err) {
+          if (err.code === 'ENOENT') {
+            reject(`Directory "${path}" did not exist`)
+          } else {
+            reject(err.toString())
+          }
+        } else {
+          resolve()
+        }
+      })
+    })
   }
 }

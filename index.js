@@ -118,11 +118,7 @@ const createErrorHandler = (version, show_output, callback) => {
 // Main logic
 const core = require('./core')
 const copyApplicationToTempLocation = core.copyApplicationToTempLocation
-const writeApplicationDockerfile = (path, version, dockerfile) => {
-  return new Promise((resolve) => {
-    fs.writeFile(path + '/Dockerfile', dockerfile.replace('$VERSION', version), resolve)
-  })
-}
+const writeApplicationDockerfile = core.writeApplicationDockerfile
 const pullBaseImage = (base_image, version, show_output) => {
   return new Promise((resolve) => {
     // TODO in the future, check if image already exists, and skip pulling
