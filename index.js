@@ -133,10 +133,14 @@ const writeApplicationDockerfile = (path, version, dockerfile) => {
 const pullBaseImage = (base_image, version, show_output) => {
   return new Promise((resolve) => {
     // TODO in the future, check if image already exists, and skip pulling
-    const should_pull = false
+    const should_pull = true
     if (should_pull) {
       docker.pull(`${base_image}:${version}`, (err, stream) => {
         stream.on('data', (chunk) => {
+          // TODO when pulling, chunk also have progress property we should print
+          // {"status":"Extracting","progressDetail":{"current":10310894,"total":10310894},
+          // "progress":"[==================================================\u003e] 10.31 MB/10.31 MB",
+          // "id":"c9590ff90c14"}
           if (show_output) {
             console.log(colors.cyan(JSON.parse(chunk).status))
           }
