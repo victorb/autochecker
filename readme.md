@@ -107,6 +107,11 @@ See `cli.js` for usage with testing multiple versions at once.
 
 ## Changelog
 
+### 0.3.1
+
+* CLI and library are now separated, enabling you to include autochecker directly in your project
+if wanted. See usage in the "Programmatic API" section above.
+
 ### 0.3.0
 
 * Add `autochecker ls` command for checking all available versions to test on
