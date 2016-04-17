@@ -171,7 +171,7 @@ const runTestForVersion = (version, show_output) => {
               if (show_output) {
                 console.log('===========================')
               }
-              logger('Tests? ' + (data.StatusCode === 0 ? '✅' : '❌'))
+              logger('Test results: ' + (data.StatusCode === 0 ? '✅' : '❌'))
               callback(null, {statusCode: data.StatusCode, version: version})
             })
           })
