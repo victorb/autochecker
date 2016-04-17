@@ -8,6 +8,13 @@ const os = require('os')
 const colors = require('colors')
 const tar = require('tar-fs')
 
+const returnOrThrow = (attribute, name) => {
+  if (attribute === undefined) {
+    throw new Error('Option ' + name + ' was undefined but it needs to be defined')
+  }
+  return attribute
+}
+
 const copyApplicationToTempLocation = (path, new_path) => {
   return new Promise((resolve, reject) => {
     fs.copy(path, new_path, {
@@ -108,35 +115,36 @@ const runContainer = (docker, image_name, test_cmd, single_view_output) => {
     })
   })
 }
-// Arguments:
-// logger: function that takes string as argument and does something, outputs it or something
-// docker: dockerode instance of the docker client
-// project_name: string of project that is built, example: 'autochecker'
-// test_command: array of command for running in container, example: ['npm', 'test']
-// app_image_name: built image name, example: `${PROJECT_NAME}_$VERSION:${GIT_COMMIT}`
-// directory_to_test: string of path of project to build, example: '/home/victor/projects/autochecker'
-// dockerfile: string of the Dockerfile to write and use for building image
-// base_image: string of the image to base the application image on, example: 'mhart/alpine-node'
-// single_view_output: to show full output or not
-const runTestForVersion = (logger, docker, version, project_name, test_command, app_image_name, directory_to_test, dockerfile, base_image, single_view_output) => {
+const runTestForVersion = (opts) => {
+  const logger = returnOrThrow(opts.logger, 'logger')
+  const docker = returnOrThrow(opts.docker, 'docker')
+  const version = returnOrThrow(opts.version, 'version')
+  const name = returnOrThrow(opts.name, 'name')
+  const test_cmd = returnOrThrow(opts.test_cmd, 'test_cmd')
+  const image_name = returnOrThrow(opts.image_name, 'image_name')
+  const path = returnOrThrow(opts.path, 'path')
+  const dockerfile = returnOrThrow(opts.dockerfile, 'dockerfile')
+  const base_image = returnOrThrow(opts.base_image, 'base_image')
+  const single_view = returnOrThrow(opts.single_view, 'single_view')
+
   return (callback) => {
     const tmp_dir = os.tmpdir()
 
-    const new_directory = `${tmp_dir}/autochecker_${project_name}_${version}`
-    const version_image_name = app_image_name.replace('$VERSION', version)
+    const new_directory = `${tmp_dir}/autochecker_${name}_${version}`
+    const version_image_name = image_name.replace('$VERSION', version)
     logger('copying files')
-    copyApplicationToTempLocation(directory_to_test, new_directory).then(() => {
+    copyApplicationToTempLocation(path, new_directory).then(() => {
       logger('writing dockerfile')
       return writeApplicationDockerfile(new_directory, version, dockerfile)
     }).then(() => {
       logger('pulling image')
-      return pullImage(docker, base_image, version, single_view_output)
+      return pullImage(docker, base_image, version, single_view)
     }).then(() => {
       logger('building image')
-      return buildImage(docker, new_directory, version_image_name, single_view_output)
+      return buildImage(docker, new_directory, version_image_name, single_view)
     }).then(() => {
       logger('running container')
-      return runContainer(docker, version_image_name, test_command, single_view_output)
+      return runContainer(docker, version_image_name, test_cmd, single_view)
     }).then((success) => {
       logger(success ? colors.green('Test results: ✅') : colors.red('Test results: ❌'))
       callback(null, {success, version})

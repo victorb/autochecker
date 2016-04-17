@@ -86,18 +86,18 @@ You can use `autochecker` in your own projects from NodeJS directly.
 var autochecker = require('autochecker')
 const Docker = require('dockerode')
 var dockerode_instance = new Docker({socketPath: '/var/run/docker.sock'});
-autochecker.runTestForVersion(
-  (msg) => { console.log(msg) }, // logger function
-  dockerode_instance,
-  '1.1.1', // version of project
-  'myproject', // name of project
-  ['npm', 'test'], // command to run tests with
-  'app/image:commit', // What the built application image will be called
-  join(__dirname, 'path_to_project'), // Path to project to build
-  'FROM nodejs:$VERSION', // Dockerfile
-  'base/image', // Base image, will add :$VERSION to the end
-  false // To show full output or not
-)((err, results) => {
+autochecker.runTestForVersion({
+  logger: (msg) => { console.log(msg) },
+  docker: dockerode_instance,
+  version: '1.1.1', // version of project
+  name: 'myproject', // name of project
+  test_cmd: ['npm', 'test'], // command to run tests with
+  image_name: 'app/image:commit', // What the built application image will be called
+  path: join(__dirname, 'path_to_project'), // Path to project to build
+  dockerfile: 'FROM nodejs:$VERSION', // Dockerfile
+  base_image: 'base/image', // Base image, will add :$VERSION to the end
+  single_view: false // To show full output or not
+})((err, results) => {
   console.log(results)
   // => {version: '1.1.1', success: true || false}
 })

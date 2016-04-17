@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha",
-    "test:watch": "mocha --watch --growl",
+    "test:watch": "npm test -- --watch --growl",
     "lint": "standard",
     "prepublish": "./cli.js 4.4.2 5.10.1"
   },

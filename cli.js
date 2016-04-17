@@ -185,18 +185,18 @@ const createLogger = (line_id, single_view) => {
 
 const runTest = (version, single_version_view) => {
   const logger = createLogger(version, single_version_view)
-  return core.runTestForVersion(
-      logger,
-      docker,
-      version,
-      PROJECT_NAME,
-      TEST_COMMAND,
-      IMAGE_NAME,
-      DIRECTORY_TO_TEST,
-      DOCKERFILE_TEMPLATE,
-      BASE_IMAGE,
-      single_version_view
-    )
+  return core.runTestForVersion({
+    logger,
+    docker,
+    version,
+    name: PROJECT_NAME,
+    test_cmd: TEST_COMMAND,
+    image_name: IMAGE_NAME,
+    path: DIRECTORY_TO_TEST,
+    dockerfile: DOCKERFILE_TEMPLATE,
+    base_image: BASE_IMAGE,
+    single_view: single_version_view
+  })
 }
 
 // Start testing everything

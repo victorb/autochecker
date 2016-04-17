@@ -162,18 +162,18 @@ describe('Application Core Logic', () => {
   })
   describe('Can run all commands with runTestsForVersion', () => {
     const testRun = () => {
-      return core.runTestForVersion(
-          () => { /* logger */ },
-          docker_mock,
-          '1.1.1',
-          'myproject',
-          ['whoami'],
-          'app/image:commit',
-          join(__dirname, 'test_project'),
-          'FROM nodejs:$VERSION',
-          'base/image',
-          false
-        )
+      return core.runTestForVersion({
+        logger: () => { /* logger */ },
+        docker: docker_mock,
+        version: '1.1.1',
+        name: 'myproject',
+        test_cmd: ['whoami'],
+        image_name: 'app/image:commit',
+        path: join(__dirname, 'test_project'),
+        dockerfile: 'FROM nodejs:$VERSION',
+        base_image: 'base/image',
+        single_view: false
+      })
     }
     it('Success', (done) => {
       docker_mock_run_statuscode = 0
