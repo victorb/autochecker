@@ -15,6 +15,7 @@ const folderExists = (path) => {
 
 var docker_mock = null
 var docker_mock_error_value = null
+var docker_mock_run_statuscode = 0
 const createMockStreamFunc = () => {
   return (image, options, callback) => {
     if (callback === undefined) {
@@ -50,7 +51,12 @@ beforeEach(() => {
   docker_mock_error_value = null
   docker_mock = {
     pull: createMockStreamFunc(),
-    buildImage: createMockStreamFunc()
+    buildImage: createMockStreamFunc(),
+    run: (image_name, cmd, output, callback) => {
+      callback(docker_mock_error_value, {
+        StatusCode: docker_mock_run_statuscode
+      })
+    }
   }
 })
 after((done) => {
@@ -133,6 +139,55 @@ describe('Application Core Logic', () => {
         core.buildImage(docker_mock, join(__dirname, 'test_project'), 'small/image', 'myversion', false),
         /Something went wrong/
       )
+    })
+  })
+  describe('Run a container', () => {
+    it('Runs a container', () => {
+      return assert.isFulfilled(core.runContainer(docker_mock, 'my/image', ['whoami'], false))
+    })
+    it('Tells when the command succeeded', (done) => {
+      docker_mock_run_statuscode = 0
+      core.runContainer(docker_mock, 'my/image', ['whoami', false]).then((success) => {
+        assert.strictEqual(success, true)
+        done()
+      }).catch(done)
+    })
+    it('Tells when the command fails', (done) => {
+      docker_mock_run_statuscode = 1
+      core.runContainer(docker_mock, 'my/image', ['whoami', false]).then((success) => {
+        assert.strictEqual(success, false)
+        done()
+      }).catch(done)
+    })
+  })
+  describe('Can run all commands with runTestsForVersion', () => {
+    const testRun = () => {
+      return core.runTestForVersion(
+          () => { /* logger */ },
+          docker_mock,
+          '1.1.1',
+          'myproject',
+          ['whoami'],
+          'app/image:commit',
+          join(__dirname, 'test_project'),
+          'FROM nodejs:$VERSION',
+          'base/image',
+          false
+        )
+    }
+    it('Success', (done) => {
+      docker_mock_run_statuscode = 0
+      testRun()((err, res) => {
+        assert.strictEqual(res.success, true)
+        done(err)
+      })
+    })
+    it('Fail', (done) => {
+      docker_mock_run_statuscode = 123
+      testRun()((err, res) => {
+        assert.strictEqual(res.success, false)
+        done(err)
+      })
     })
   })
 })
