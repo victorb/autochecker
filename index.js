@@ -119,30 +119,7 @@ const createErrorHandler = (version, show_output, callback) => {
 const core = require('./core')
 const copyApplicationToTempLocation = core.copyApplicationToTempLocation
 const writeApplicationDockerfile = core.writeApplicationDockerfile
-const pullBaseImage = (base_image, version, show_output) => {
-  return new Promise((resolve) => {
-    // TODO in the future, check if image already exists, and skip pulling
-    const should_pull = true
-    if (should_pull) {
-      docker.pull(`${base_image}:${version}`, (err, stream) => {
-        stream.on('data', (chunk) => {
-          // TODO when pulling, chunk also have progress property we should print
-          // {"status":"Extracting","progressDetail":{"current":10310894,"total":10310894},
-          // "progress":"[==================================================\u003e] 10.31 MB/10.31 MB",
-          // "id":"c9590ff90c14"}
-          if (show_output) {
-            console.log(colors.cyan(JSON.parse(chunk).status))
-          }
-        })
-        stream.on('end', () => {
-          resolve(err)
-        })
-      })
-    } else {
-      resolve(null)
-    }
-  })
-}
+const pullBaseImage = core.pullImage
 const buildImage = (path, image_name, show_output) => {
   return new Promise((resolve) => {
     const tarStream = tar.pack(path)
@@ -193,7 +170,7 @@ const runTestForVersion = (version, show_output) => {
       writeApplicationDockerfile(new_directory, version, DOCKERFILE_TEMPLATE).then((err) => {
         handleErr('writing Dockerfile', err)
         logger('Pulling base image', colors.yellow)
-        pullBaseImage(BASE_IMAGE, version, show_output).then((err) => {
+        pullBaseImage(docker, BASE_IMAGE, version, show_output).then((err) => {
           handleErr('pulling base image', err)
           logger('Building image', colors.yellow)
           const version_image_name = IMAGE_NAME.replace('$VERSION', version)

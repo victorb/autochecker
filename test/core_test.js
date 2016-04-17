@@ -1,4 +1,4 @@
-/* global describe, it, afterEach, beforeEach */
+/* global describe, it, afterEach, beforeEach, xit */
 const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
@@ -6,6 +6,7 @@ chai.use(chaiAsPromised)
 const assert = chai.assert
 const fs = require('fs-extra')
 const join = require('path').join
+const stream = require('stream')
 const core = require('../core')
 
 const folderExists = (path) => {
@@ -18,7 +19,7 @@ const PACKAGE_FILE = `{
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"I'm gonna fail...\"; exit 1"
+    "test": "echo "I'm gonna fail..."; exit 1"
   },
   "keywords": [],
   "license": "MIT"
@@ -48,8 +49,8 @@ describe('Application Core Logic', () => {
 
       // Act
       core.copyApplicationToTempLocation(
-          join(__dirname, 'test_project'),
-          join(__dirname, 'tmp_test_project')
+        join(__dirname, 'test_project'),
+        join(__dirname, 'tmp_test_project')
       ).then(() => {
         folder_exists = folderExists('tmp_test_project')
         git_folder_exists = folderExists('tmp_test_project/.git')
@@ -82,5 +83,28 @@ describe('Application Core Logic', () => {
       const promise = core.writeApplicationDockerfile(join(__dirname, 'test_project'), 'myversion', 'FROM dockerfile:$DOCKER')
       return assert.isRejected(promise, /Dockerfile did not contain \$VERSION/)
     })
+  })
+  describe('Pulling a image', () => {
+    var docker_mock = null
+    var error_value = null
+    beforeEach(() => {
+      docker_mock = {
+        pull: (image, callback) => {
+          const fake_stream = new stream.Readable()
+          callback(error_value, fake_stream)
+          fake_stream._read = () => {
+          }
+          fake_stream.emit('end')
+        }
+      }
+    })
+    it('Pull an image with docker', () => {
+      return assert.isFulfilled(core.pullImage(docker_mock, 'small/image', 'myversion', false))
+    })
+    it('Fail while pulling image', () => {
+      error_value = new Error('Something went wrong')
+      return assert.isRejected(core.pullImage(docker_mock, 'small/image', 'myversion', false), /Something went wrong/)
+    })
+    xit('Logs data if wanted')
   })
 })
