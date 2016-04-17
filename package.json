@@ -1,6 +1,6 @@
 {
   "name": "autochecker",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Test your JavaScript modules simultaneously in 32 different versions of NodeJS",
   "main": "index.js",
   "scripts": {
