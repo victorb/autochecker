@@ -78,6 +78,28 @@ and additional tools at
 Aside from adding libraries to the container, the custom template can be useful to avoid running postinstall
 hooks. Just use `RUN npm install --ignore-scripts` instead.
 
+## Changelog
+
+### 0.3.0
+
+* Add `autochecker ls` command for checking all available versions to test on
+* More splitting up code
+
+### 0.2.2
+
+* Starting to split up things and start testing
+* Started using autochecker for checking autochecker in version 4 and 5
+* Limit to amount of tests running in parallel, controlled by `TEST_LIMIT` env var
+
+### 0.2.0
+
+* Support for custom Dockerfile template (thanks to @bahmutov)
+* Fancier logging
+
+### 0.1.0
+
+* Initial release
+
 ## License
 
 MIT License 2016 - Victor Bjelkholm
