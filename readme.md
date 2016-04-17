@@ -107,6 +107,10 @@ See `cli.js` for usage with testing multiple versions at once.
 
 ## Changelog
 
+### 0.4.0
+
+* New `opts` (Object with parameter) arguments for module usage, instead of 1000 arguments
+
 ### 0.3.1
 
 * CLI and library are now separated, enabling you to include autochecker directly in your project
