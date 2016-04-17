@@ -4,6 +4,7 @@
  *
  */
 const fs = require('fs-extra')
+const tar = require('tar-fs')
 
 module.exports = {
   copyApplicationToTempLocation: (path, new_path) => {
@@ -72,6 +73,27 @@ module.exports = {
       } else {
         resolve(null)
       }
+    })
+  },
+  buildImage: (docker, path, image_name, show_output) => {
+    return new Promise((resolve, reject) => {
+      if (!fs.existsSync(path)) {
+        reject('Path "' + path + '" does not exist')
+      }
+      const tarStream = tar.pack(path)
+      docker.buildImage(tarStream, {t: image_name}, (err, stream) => {
+        if (err) {
+          reject(err)
+        }
+        stream.on('data', (chunk) => {
+          if (show_output) {
+            process.stdout.write(JSON.parse(chunk).stream)
+          }
+        })
+        stream.on('end', () => {
+          resolve(err)
+        })
+      })
     })
   }
 }

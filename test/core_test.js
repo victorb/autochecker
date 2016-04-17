@@ -1,4 +1,4 @@
-/* global describe, it, afterEach, beforeEach, xit */
+/* global describe, it, after, beforeEach, xit */
 const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
 chai.use(chaiAsPromised)
@@ -13,6 +13,21 @@ const folderExists = (path) => {
   return fs.existsSync(join(__dirname, path))
 }
 
+var docker_mock = null
+var docker_mock_error_value = null
+const createMockStreamFunc = () => {
+  return (image, options, callback) => {
+    if (callback === undefined) {
+      callback = options
+    }
+    const fake_stream = new stream.Readable()
+    callback(docker_mock_error_value, fake_stream)
+    fake_stream._read = () => {
+    }
+    fake_stream.emit('end')
+  }
+}
+
 const PACKAGE_FILE = `{
   "name": "test_project",
   "version": "0.0.1",
@@ -25,19 +40,29 @@ const PACKAGE_FILE = `{
   "license": "MIT"
 }`
 
+const writeTestProject = () => {
+  fs.mkdirsSync(join(__dirname, 'test_project'))
+  fs.mkdirsSync(join(__dirname, 'test_project', '.git'))
+  fs.mkdirsSync(join(__dirname, 'test_project', 'node_modules'))
+  fs.writeFileSync(join(__dirname, 'test_project', 'package.json'), JSON.stringify(PACKAGE_FILE, null, 2))
+}
+beforeEach(() => {
+  docker_mock_error_value = null
+  docker_mock = {
+    pull: createMockStreamFunc(),
+    buildImage: createMockStreamFunc()
+  }
+})
+after((done) => {
+  fs.remove(join(__dirname, 'tmp_test_project'), () => {
+    fs.remove(join(__dirname, 'test_project'), () => {
+      done()
+    })
+  })
+})
 describe('Application Core Logic', () => {
-  beforeEach(() => {
-    // Create a example project
-    fs.mkdirsSync(join(__dirname, 'test_project'))
-    fs.writeFileSync(join(__dirname, 'test_project/package.json'), JSON.stringify(PACKAGE_FILE, null, 2))
-    fs.mkdirsSync(join(__dirname, 'test_project/.git'))
-    fs.mkdirsSync(join(__dirname, 'test_project/node_modules'))
-  })
-  afterEach(() => {
-    fs.removeSync(join(__dirname, 'tmp_test_project'))
-    fs.removeSync(join(__dirname, 'test_project'))
-  })
   describe('Copy application', () => {
+    beforeEach(writeTestProject)
     it('Can copy directory', (done) => {
       // Arrange
       var folder_exists = folderExists('test_project')
@@ -85,26 +110,29 @@ describe('Application Core Logic', () => {
     })
   })
   describe('Pulling a image', () => {
-    var docker_mock = null
-    var error_value = null
-    beforeEach(() => {
-      docker_mock = {
-        pull: (image, callback) => {
-          const fake_stream = new stream.Readable()
-          callback(error_value, fake_stream)
-          fake_stream._read = () => {
-          }
-          fake_stream.emit('end')
-        }
-      }
-    })
     it('Pull an image with docker', () => {
       return assert.isFulfilled(core.pullImage(docker_mock, 'small/image', 'myversion', false))
     })
-    it('Fail while pulling image', () => {
-      error_value = new Error('Something went wrong')
+    it('Can fail while pulling image', () => {
+      docker_mock_error_value = new Error('Something went wrong')
       return assert.isRejected(core.pullImage(docker_mock, 'small/image', 'myversion', false), /Something went wrong/)
     })
     xit('Logs data if wanted')
+  })
+  describe('Building a image', () => {
+    beforeEach(writeTestProject)
+    it('Builds a image from path', () => {
+      return assert.isFulfilled(core.buildImage(docker_mock, join(__dirname, 'test_project'), 'my/image', false))
+    })
+    it('Build fails if directory does not exists', () => {
+      return assert.isRejected(core.buildImage(docker_mock, join(__dirname, 'not_existing'), 'my/image', false))
+    })
+    it('Can fail while building image', () => {
+      docker_mock_error_value = new Error('Something went wrong')
+      return assert.isRejected(
+        core.buildImage(docker_mock, join(__dirname, 'test_project'), 'small/image', 'myversion', false),
+        /Something went wrong/
+      )
+    })
   })
 })

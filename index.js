@@ -11,7 +11,6 @@ const fs = require('fs-extra')
 const async = require('async')
 const colors = require('colors/safe')
 const git = require('git-rev-sync')
-const tar = require('tar-fs')
 
 const logGreen = (msg) => console.log(colors.green(msg))
 const logRed = (msg) => console.log(colors.red(msg))
@@ -120,21 +119,7 @@ const core = require('./core')
 const copyApplicationToTempLocation = core.copyApplicationToTempLocation
 const writeApplicationDockerfile = core.writeApplicationDockerfile
 const pullBaseImage = core.pullImage
-const buildImage = (path, image_name, show_output) => {
-  return new Promise((resolve) => {
-    const tarStream = tar.pack(path)
-    docker.buildImage(tarStream, {t: image_name}, (err, stream) => {
-      stream.on('data', (chunk) => {
-        if (show_output) {
-          process.stdout.write(colors.cyan(JSON.parse(chunk).stream))
-        }
-      })
-      stream.on('end', () => {
-        resolve(err)
-      })
-    })
-  })
-}
+const buildImage = core.buildImage
 const runContainer = (image_name, test_cmd, show_output) => {
   return new Promise((resolve) => {
     const outputter = show_output ? coloredStdout : null
@@ -174,7 +159,7 @@ const runTestForVersion = (version, show_output) => {
           handleErr('pulling base image', err)
           logger('Building image', colors.yellow)
           const version_image_name = IMAGE_NAME.replace('$VERSION', version)
-          buildImage(new_directory, version_image_name, show_output).then((err) => {
+          buildImage(docker, new_directory, version_image_name, show_output).then((err) => {
             handleErr('building image', err)
             logger('Running application tests', colors.yellow)
             runContainer(version_image_name, TEST_COMMAND, show_output).then((res) => {
