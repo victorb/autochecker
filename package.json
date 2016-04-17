@@ -7,10 +7,10 @@
     "test": "mocha",
     "test:watch": "mocha --watch --growl",
     "lint": "standard",
-    "prepublish": "./index.js 4.4.2 5.10.1"
+    "prepublish": "./cli.js 4.4.2 5.10.1"
   },
   "bin": {
-    "autochecker": "index.js"
+    "autochecker": "cli.js"
   },
   "keywords": [
     "testing",

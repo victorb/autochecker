@@ -78,6 +78,33 @@ and additional tools at
 Aside from adding libraries to the container, the custom template can be useful to avoid running postinstall
 hooks. Just use `RUN npm install --ignore-scripts` instead.
 
+## Programmatic API
+
+You can use `autochecker` in your own projects from NodeJS directly.
+
+```javascript
+var autochecker = require('autochecker')
+const Docker = require('dockerode')
+var dockerode_instance = new Docker({socketPath: '/var/run/docker.sock'});
+autochecker.runTestForVersion(
+  (msg) => { console.log(msg) }, // logger function
+  dockerode_instance,
+  '1.1.1', // version of project
+  'myproject', // name of project
+  ['npm', 'test'], // command to run tests with
+  'app/image:commit', // What the built application image will be called
+  join(__dirname, 'path_to_project'), // Path to project to build
+  'FROM nodejs:$VERSION', // Dockerfile
+  'base/image', // Base image, will add :$VERSION to the end
+  false // To show full output or not
+)((err, results) => {
+  console.log(results)
+  // => {version: '1.1.1', success: true || false}
+})
+```
+
+See `cli.js` for usage with testing multiple versions at once.
+
 ## Changelog
 
 ### 0.3.0

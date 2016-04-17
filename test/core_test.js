@@ -7,7 +7,7 @@ const assert = chai.assert
 const fs = require('fs-extra')
 const join = require('path').join
 const stream = require('stream')
-const core = require('../core')
+const core = require('../index')
 
 const folderExists = (path) => {
   return fs.existsSync(join(__dirname, path))
