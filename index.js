@@ -5,6 +5,7 @@
  */
 const fs = require('fs-extra')
 const os = require('os')
+const stream = require('stream')
 const colors = require('colors')
 const tar = require('tar-fs')
 
@@ -106,12 +107,23 @@ const buildImage = (docker, path, image_name, single_view_output) => {
 }
 const runContainer = (docker, image_name, test_cmd, single_view_output) => {
   return new Promise((resolve, reject) => {
-    const outputter = single_view_output ? process.stdout : null
+    var output = []
+    const collect_output_stream = new stream.Writable({
+      write: (chunk, encoding, next) => {
+        output.push(chunk.toString())
+        next()
+      }
+    })
+    const outputter = single_view_output ? process.stdout : collect_output_stream
     docker.run(image_name, test_cmd, outputter, (err, data) => {
       if (err) {
         reject(err)
       }
-      resolve(data.StatusCode === 0)
+      var to_resolve = {success: data.StatusCode === 0}
+      if (!single_view_output) {
+        to_resolve.output = output.join('')
+      }
+      resolve(to_resolve)
     })
   })
 }
@@ -145,9 +157,11 @@ const runTestForVersion = (opts) => {
     }).then(() => {
       logger('running container')
       return runContainer(docker, version_image_name, test_cmd, single_view)
-    }).then((success) => {
+    }).then((res) => {
+      const success = res.success
+      const output = res.output
       logger(success ? colors.green('Test results: ✅') : colors.red('Test results: ❌'))
-      callback(null, {success, version})
+      callback(null, {success, version, output})
     }).catch((err) => { callback(err) })
   }
 }

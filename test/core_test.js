@@ -147,15 +147,15 @@ describe('Application Core Logic', () => {
     })
     it('Tells when the command succeeded', (done) => {
       docker_mock_run_statuscode = 0
-      core.runContainer(docker_mock, 'my/image', ['whoami', false]).then((success) => {
-        assert.strictEqual(success, true)
+      core.runContainer(docker_mock, 'my/image', ['whoami'], false).then((res) => {
+        assert.strictEqual(res.success, true)
         done()
       }).catch(done)
     })
     it('Tells when the command fails', (done) => {
       docker_mock_run_statuscode = 1
-      core.runContainer(docker_mock, 'my/image', ['whoami', false]).then((success) => {
-        assert.strictEqual(success, false)
+      core.runContainer(docker_mock, 'my/image', ['whoami'], false).then((res) => {
+        assert.strictEqual(res.success, false)
         done()
       }).catch(done)
     })

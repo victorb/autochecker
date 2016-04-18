@@ -126,6 +126,10 @@ const default_versions_to_test = [
   '5.10.1'
 ]
 
+const onlyFailures = (result) => {
+  return !result.success
+}
+
 const testVersions = (versions) => {
   console.log('autochecker', 'Running tests in ' + versions.length + ' different NodeJS versions')
   async.parallelLimit(versions, process.env.TEST_LIMIT || os.cpus().length, (err, results) => {
@@ -135,9 +139,16 @@ const testVersions = (versions) => {
     }
     var any_errors = false
     var successes = results.filter((result) => result.success).length
-    var failures = results.filter((result) => !result.success).length
+    var failures = results.filter(onlyFailures).length
     console.log()
     console.log('== Results (Success/Fail ' + successes + '/' + failures + ') ==')
+    if (failures > 0) {
+      console.log(colors.red('# Failing tests'))
+      results.filter(onlyFailures).forEach((failure) => {
+        console.log(colors.blue('## Output from ' + failure.version))
+        console.log(failure.output)
+      })
+    }
     results.forEach((result) => {
       if (result.success) {
         logGreen('The tests did pass on version ' + result.version)

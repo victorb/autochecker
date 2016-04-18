@@ -99,13 +99,17 @@ autochecker.runTestForVersion({
   single_view: false // To show full output or not
 })((err, results) => {
   console.log(results)
-  // => {version: '1.1.1', success: true || false}
+  // => {version: '1.1.1', success: true || false, output: 'output from test_cmd'}
 })
 ```
 
 See `cli.js` for usage with testing multiple versions at once.
 
 ## Changelog
+
+### 0.5.0
+
+* Show the failing versions output
 
 ### 0.4.0
 
