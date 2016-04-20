@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>autochecker - Test your JavaScript modules in all the versions of NodeJS</title>
+  <link href='https://fonts.googleapis.com/css?family=Hind+Vadodara|Oxygen+Mono' rel='stylesheet' type='text/css'>
+  <style>
+  body, html {
+    margin: 0px;
+    padding: 0px;
+    font-family: 'Hind Vadodara', sans-serif;
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    line-height: 1.2em;
+  }
+  #wrapper {
+    max-width: 595px;
+    min-width: 320px;
+    margin: 0 auto;
+  }
+  h1 {
+    margin-top: 2em;
+    margin-bottom: 1em;
+    text-align: center;
+  }
+  code {
+    font-family: 'Oxygen Mono', ;
+    background-color: #3498db;
+    padding: 5px;
+  }
+  #install {
+    text-align: center;
+  }
+  .example {
+    text-align: center;
+  }
+  #share {
+    text-align: center;
+  }
+  #docs {
+    margin-bottom: 3em;
+      text-align: center;
+  }
+  a {
+    color: #3498db;
+  }
+  .github-corner {
+    position: fixed;
+    z-index: 1000;
+    top: 0px;
+    right: 0px;
+  }
+  </style>
+</head>
+<body>
+  <div id="wrapper">
+    <div id="intro">
+      <h1 style="font-size: 3em">autochecker</h1>
+      <p>Test your JavaScript modules simultaneously in all the different versions of NodeJS</p>
+    </div>
+    <div id="description">
+      <p>
+        Image you have either a library or a application that you need to maintain to work on many
+        different versions of NodeJS, or want to make sure it works in the latest versions.
+      </p>
+      <p>
+        <strong>Then autochecker will help you with exactly that!</strong>
+      </p>
+    </div>
+    <div id="requirements">
+      <h1>Requirements</h1>
+      <ul>
+        <li>NodeJS version 4.2.4 or higher</li>
+        <li>Docker</li>
+        <li>DOCKER_HOST and DOCKER_CERT_PATH<br/>environment variables (that comes with docker-machine by default)</li>
+      </ul>
+    </div>
+    <div id="install">
+      <h1>Installation</h1>
+      <p>Globally:</p>
+      <code>npm install -g autochecker</code>
+      <p>Or just in your project:</p>
+      <code>npm install --save-dev autochecker</code>
+    </div>
+    <div id="examples">
+      <h1>Examples</h1>
+      <div class="example">
+        <p><code>autochecker</code></p>
+        <p>All available versions tested</p>
+        <img src="example_1.gif" alt="Runs many different examples">
+      </div>
+      <div class="example">
+        <p><code>autochecker 0.10 5.8</code></p>
+        <p>Only specified versions tested</p>
+        <img src="example_2.gif" alt="Runs specified versions only">
+      </div>
+      <div class="example">
+        <p><code>autochecker 0.10</code></p>
+        <p>Only one specified version tested with verbose output</p>
+        <img src="example_3.gif" alt="Runs specified version only">
+      </div>
+      <div class="example">
+        <p><code>TEST_LIMIT=10 autochecker</code></p>
+        <p>Set the limit of number of parallel tests</p>
+        <img src="example_4.gif" alt="Configure how many tests to run in the same time">
+      </div>
+    </div>
+    <div id="share">
+      <h1>You like autochecker?</h1>
+      <p>Want to tell people? Tweet about it!</p>
+      <a href="https://twitter.com/share" class="twitter-share-button" data-via="VictorBjelkholm" data-size="large">Tweet</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      <p>You want to help out? Fork it on Github!</p>
+      <div id="github">
+        <iframe src="https://ghbtns.com/github-btn.html?user=VictorBjelkholm&repo=autochecker&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="76px" height="30px"></iframe>
+      </div>
+    </div>
+    <div id="docs">
+      <h1>Documentation</h1>
+      Full documentation is available on Github:<br/>
+      <a href="https://github.com/victorbjelkholm/autochecker">https://github.com/victorbjelkholm/autochecker</a>
+      <br/><br/>
+      <h3>Created with nothing else but code<br/>(and a bit of coffee) by <a href="https://twitter.com/VictorBjelkholm">@VictorBjelkholm</a></h3>
+    </div>
+  </div>
+  <a href="https://github.com/victorbjelkholm/autochecker" class="github-corner"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#fff; color:#151513; position: absolute; top: 0; border: 0; right: 0;"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
+</body>
+</html>
