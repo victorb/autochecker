@@ -134,7 +134,8 @@ const testVersions = (versions) => {
   console.log('autochecker', 'Running tests in ' + versions.length + ' different NodeJS versions')
   async.parallelLimit(versions, process.env.TEST_LIMIT || os.cpus().length, (err, results) => {
     if (err) {
-      logRed('Something went wrong in running tests...')
+      logRed('Something went wrong when running the tests...')
+      logRed(err)
       throw new Error(err)
     }
     var any_errors = false

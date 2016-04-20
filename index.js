@@ -94,6 +94,10 @@ const buildImage = (docker, path, image_name, single_view_output) => {
       if (err) {
         reject(err)
       }
+      if (!stream) {
+        reject()
+        return
+      }
       stream.on('data', (chunk) => {
         if (single_view_output) {
           process.stdout.write(JSON.parse(chunk).stream)
@@ -118,6 +122,10 @@ const runContainer = (docker, image_name, test_cmd, single_view_output) => {
     docker.run(image_name, test_cmd, outputter, (err, data) => {
       if (err) {
         reject(err)
+      }
+      if (!data) {
+        reject()
+        return
       }
       var to_resolve = {success: data.StatusCode === 0}
       if (!single_view_output) {
