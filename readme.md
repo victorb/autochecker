@@ -107,6 +107,10 @@ See `cli.js` for usage with testing multiple versions at once.
 
 ## Changelog
 
+### 0.5.1
+
+* Show the test statistics (# of failing/succeeded tests) after showing the errors
+
 ### 0.5.0
 
 * Show the failing versions output
