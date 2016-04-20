@@ -141,7 +141,6 @@ const testVersions = (versions) => {
     var successes = results.filter((result) => result.success).length
     var failures = results.filter(onlyFailures).length
     console.log()
-    console.log('== Results (Success/Fail ' + successes + '/' + failures + ') ==')
     if (failures > 0) {
       console.log(colors.red('# Failing tests'))
       results.filter(onlyFailures).forEach((failure) => {
@@ -149,6 +148,7 @@ const testVersions = (versions) => {
         console.log(failure.output)
       })
     }
+    console.log('== Results (Success/Fail ' + successes + '/' + failures + ') ==')
     results.forEach((result) => {
       if (result.success) {
         logGreen('The tests did pass on version ' + result.version)
