@@ -10,7 +10,7 @@ Works well with CI as well!
 
 ## Requirements
 
-* Docker
+* Docker -> [install here](https://www.docker.com/products/docker-toolbox)
 * `package.json` `scripts.test` setup correctly
 * Two environment variables, `DOCKER_HOST` and `DOCKER_CERT_PATH` (comes by default with docker-machine)
 
