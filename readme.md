@@ -107,6 +107,10 @@ See `cli.js` for usage with testing multiple versions at once.
 
 ## Changelog
 
+### 0.6.0
+
+* Possible to use non-node languages, added a ruby example project
+
 ### 0.5.2
 
 * Show errors coming from docker
