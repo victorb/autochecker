@@ -1,0 +1,14 @@
+FROM ruby:$VERSION
+
+RUN mkdir -p /usr/src/app
+
+WORKDIR /usr/src/app
+
+COPY Gemfile .
+COPY Gemfile.lock .
+
+RUN bundle
+
+COPY . .
+
+CMD bundle exec rspec

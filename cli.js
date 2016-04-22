@@ -2,6 +2,7 @@
 const os = require('os')
 const readline = require('readline')
 const url = require('url')
+const path = require('path')
 const join = require('path').join
 
 // External
@@ -43,6 +44,7 @@ WORKDIR /usr/src/app
 COPY package.json .
 RUN npm install
 COPY . .
+CMD npm test
 `
   return DEFAULT_DOCKER_TEMPLATE
 }
@@ -55,9 +57,15 @@ const CERT_PATH = process.env.DOCKER_CERT_PATH
 const DOCKERFILE_TEMPLATE = getDockerTemplate()
 
 const DIRECTORY_TO_TEST = process.cwd()
-const TEST_COMMAND = ['npm', 'test']
+const TEST_COMMAND = [] // Empty, is in Dockerfile
 const BASE_IMAGE = 'mhart/alpine-node'
-const PROJECT_NAME = require(DIRECTORY_TO_TEST + '/package.json').name
+const PROJECT_NAME = (function getProjectName () {
+  try {
+    return require(DIRECTORY_TO_TEST + '/package.json').name
+  } catch (err) {
+    return path.basename(DIRECTORY_TO_TEST)
+  }
+})()
 const GIT_COMMIT = git.long()
 const IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${GIT_COMMIT}`
 const DOCKER_CONFIG = {

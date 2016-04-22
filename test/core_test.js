@@ -13,9 +13,6 @@ const folderExists = (path) => {
   return fs.existsSync(join(__dirname, path))
 }
 
-var docker_mock = null
-var docker_mock_error_value = null
-var docker_mock_run_statuscode = 0
 const createMockStreamFunc = () => {
   return (image, options, callback) => {
     if (callback === undefined) {
@@ -47,6 +44,10 @@ const writeTestProject = () => {
   fs.mkdirsSync(join(__dirname, 'test_project', 'node_modules'))
   fs.writeFileSync(join(__dirname, 'test_project', 'package.json'), JSON.stringify(PACKAGE_FILE, null, 2))
 }
+
+var docker_mock = null
+var docker_mock_error_value = null
+var docker_mock_run_statuscode = 0
 beforeEach(() => {
   docker_mock_error_value = null
   docker_mock = {

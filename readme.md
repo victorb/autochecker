@@ -42,7 +42,7 @@ By default, executing `autochecker` will run the tests on all available versions
 
 You can specify which versions you want to test by adding them in the end of the command:
 
-`autochecker 0.10 0.11 4 5.10.1 latest`
+`autochecker 0.10 0.11 4 5.10.1`
 
 Versions comes from the `mhart/alpine-node` docker image tags
 
