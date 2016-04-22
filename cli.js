@@ -57,11 +57,6 @@ CMD npm test
   return DEFAULT_DOCKER_TEMPLATE
 }
 
-const DOCKER_PROTOCOL = 'https'
-const parsed_url = url.parse(process.env.DOCKER_HOST)
-const DOCKER_HOST = parsed_url.hostname
-const DOCKER_PORT = parsed_url.port
-const CERT_PATH = process.env.DOCKER_CERT_PATH
 const DOCKERFILE_TEMPLATE = getDockerTemplate()
 
 const DIRECTORY_TO_TEST = process.cwd()
@@ -76,15 +71,24 @@ const PROJECT_NAME = (function getProjectName () {
 })()
 const GIT_COMMIT = git.long()
 const IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${GIT_COMMIT}`
-const DOCKER_CONFIG = use_docker_socket ? {
-  socketPath: docker_socket
-} : {
-  protocol: DOCKER_PROTOCOL,
-  host: DOCKER_HOST,
-  port: DOCKER_PORT,
-  ca: fs.readFileSync(join(CERT_PATH, 'ca.pem')),
-  cert: fs.readFileSync(join(CERT_PATH, 'cert.pem')),
-  key: fs.readFileSync(join(CERT_PATH, 'key.pem'))
+
+var DOCKER_CONFIG = {}
+if (use_docker_socket) {
+  DOCKER_CONFIG = {socketPath: docker_socket}
+} else {
+  const protocol = 'https'
+  const parsed_url = url.parse(process.env.DOCKER_HOST)
+  const host = parsed_url.hostname
+  const port = parsed_url.port
+  const cert_path = process.env.DOCKER_CERT_PATH
+  DOCKER_CONFIG = {
+    protocol: protocol,
+    host: host,
+    port: port,
+    ca: fs.readFileSync(join(cert_path, 'ca.pem')),
+    cert: fs.readFileSync(join(cert_path, 'cert.pem')),
+    key: fs.readFileSync(join(cert_path, 'key.pem'))
+  }
 }
 // TODO implement log levels...
 // const LOG_LEVEL = 'default'
