@@ -25,9 +25,17 @@ const clearScreen = (from) => {
   readline.clearScreenDown(process.stdout)
 }
 
-if (process.env.DOCKER_HOST === undefined) {
-  logRed('environment variable DOCKER_HOST looks empty')
-  console.log('Should be similar to this: "tcp://192.168.99.100:2376"')
+var use_docker_socket = true
+const docker_host = process.env.DOCKER_HOST
+const docker_socket = '/var/run/docker.sock'
+
+if (!fs.existsSync(docker_socket)) {
+  use_docker_socket = false
+}
+
+if (!docker_host && !use_docker_socket) {
+  logRed('environment variable DOCKER_HOST looks empty and no socket file found at ' + docker_socket)
+  console.log('DOCKER_HOST should be similar to this: "tcp://192.168.99.100:2376"')
   console.log('If you are using docker-machine, running "eval $(docker-machine env default)" should fix this')
   process.exit(1)
 }
@@ -68,7 +76,9 @@ const PROJECT_NAME = (function getProjectName () {
 })()
 const GIT_COMMIT = git.long()
 const IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${GIT_COMMIT}`
-const DOCKER_CONFIG = {
+const DOCKER_CONFIG = use_docker_socket ? {
+  socketPath: docker_socket
+} : {
   protocol: DOCKER_PROTOCOL,
   host: DOCKER_HOST,
   port: DOCKER_PORT,
