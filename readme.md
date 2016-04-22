@@ -107,6 +107,12 @@ See `cli.js` for usage with testing multiple versions at once.
 
 ## Changelog
 
+### 0.7.0
+
+* Rename single_view -> verbose in the API
+* Enable usage of docker socket if possible, fall back to API
+* Move examples into examples/ folder
+
 ### 0.6.0
 
 * Possible to use non-node languages, added a ruby example project
