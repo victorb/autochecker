@@ -107,6 +107,10 @@ See `cli.js` for usage with testing multiple versions at once.
 
 ## Changelog
 
+### 0.7.1
+
+* More renaming of verbose
+
 ### 0.7.0
 
 * Rename single_view -> verbose in the API
