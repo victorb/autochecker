@@ -173,7 +173,7 @@ describe('Application Core Logic', () => {
         path: join(__dirname, 'test_project'),
         dockerfile: 'FROM nodejs:$VERSION',
         base_image: 'base/image',
-        single_view: false
+        verbose: false
       })
     }
     it('Success', (done) => {

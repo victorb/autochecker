@@ -149,11 +149,13 @@ const onlyFailures = (result) => {
 }
 
 const testVersions = (versions) => {
-  console.log('autochecker', 'Running tests in ' + versions.length + ' different NodeJS versions')
+  console.log('autochecker', 'Running tests in ' + versions.length + ' different sessions')
   async.parallelLimit(versions, process.env.TEST_LIMIT || os.cpus().length, (err, results) => {
     if (err) {
       logRed('Something went wrong when running the tests...')
       logRed(err)
+      console.log('Full error:')
+      console.log(err)
       throw new Error(err)
     }
     var any_errors = false
@@ -193,12 +195,12 @@ if (process.argv[2] === 'ls') {
 
 // Setup logging
 var linesToLog = {}
-const createLogger = (line_id, single_view) => {
+const createLogger = (line_id, verbose) => {
   return (msg, color) => {
     if (color === undefined) {
       color = (str) => colors.yellow(str)
     }
-    if (single_view) {
+    if (verbose) {
       console.log(color(msg))
     } else {
       clearScreen(1)
@@ -213,8 +215,8 @@ const createLogger = (line_id, single_view) => {
   }
 }
 
-const runTest = (version, single_version_view) => {
-  const logger = createLogger(version, single_version_view)
+const runTest = (version, verbose) => {
+  const logger = createLogger(version, verbose)
   return core.runTestForVersion({
     logger,
     docker,
@@ -225,7 +227,7 @@ const runTest = (version, single_version_view) => {
     path: DIRECTORY_TO_TEST,
     dockerfile: DOCKERFILE_TEMPLATE,
     base_image: BASE_IMAGE,
-    single_view: single_version_view
+    verbose
   })
 }
 

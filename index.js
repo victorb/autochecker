@@ -44,7 +44,8 @@ const writeApplicationDockerfile = (path, version, dockerfile) => {
       reject('Dockerfile did not contain $VERSION')
       return
     }
-    fs.writeFile(path + '/Dockerfile', dockerfile.replace('$VERSION', version), (err) => {
+    const contents = dockerfile.replace('$VERSION', version)
+    fs.writeFile(path + '/Dockerfile', contents, (err) => {
       if (err) {
         if (err.code === 'ENOENT') {
           reject(`Directory "${path}" did not exist`)
@@ -100,7 +101,19 @@ const buildImage = (docker, path, image_name, single_view_output) => {
       }
       stream.on('data', (chunk) => {
         if (single_view_output) {
-          process.stdout.write(JSON.parse(chunk).stream)
+          const parsed = JSON.parse(chunk.toString())
+          var to_print = null
+          if (parsed.status) {
+            to_print = parsed.status
+          }
+          if (parsed.stream) {
+            to_print = parsed.stream
+          }
+          if (parsed.error) {
+            reject(parsed.error)
+            return
+          }
+          process.stdout.write(to_print)
         }
       })
       stream.on('end', () => {
@@ -145,7 +158,7 @@ const runTestForVersion = (opts) => {
   const path = returnOrThrow(opts.path, 'path')
   const dockerfile = returnOrThrow(opts.dockerfile, 'dockerfile')
   const base_image = returnOrThrow(opts.base_image, 'base_image')
-  const single_view = returnOrThrow(opts.single_view, 'single_view')
+  const verbose = returnOrThrow(opts.verbose, 'verbose')
 
   return (callback) => {
     const tmp_dir = os.tmpdir()
@@ -158,13 +171,13 @@ const runTestForVersion = (opts) => {
       return writeApplicationDockerfile(new_directory, version, dockerfile)
     }).then(() => {
       logger('pulling image')
-      return pullImage(docker, base_image, version, single_view)
+      return pullImage(docker, base_image, version, verbose)
     }).then(() => {
       logger('building image')
-      return buildImage(docker, new_directory, version_image_name, single_view)
+      return buildImage(docker, new_directory, version_image_name, verbose)
     }).then(() => {
       logger('running container')
-      return runContainer(docker, version_image_name, test_cmd, single_view)
+      return runContainer(docker, version_image_name, test_cmd, verbose)
     }).then((res) => {
       const success = res.success
       const output = res.output
