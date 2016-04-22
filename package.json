@@ -36,6 +36,7 @@
   "files": [
     ".dockerignore",
     "index.js",
-    "cli.js"
+    "cli.js",
+    "demo.gif"
   ]
 }
