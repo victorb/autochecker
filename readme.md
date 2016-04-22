@@ -96,7 +96,7 @@ autochecker.runTestForVersion({
   path: join(__dirname, 'path_to_project'), // Path to project to build
   dockerfile: 'FROM nodejs:$VERSION', // Dockerfile
   base_image: 'base/image', // Base image, will add :$VERSION to the end
-  single_view: false // To show full output or not
+  verbose: false // To show full output or not
 })((err, results) => {
   console.log(results)
   // => {version: '1.1.1', success: true || false, output: 'output from test_cmd'}

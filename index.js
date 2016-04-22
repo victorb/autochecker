@@ -58,7 +58,7 @@ const writeApplicationDockerfile = (path, version, dockerfile) => {
     })
   })
 }
-const pullImage = (docker, base_image, version, single_view_output) => {
+const pullImage = (docker, base_image, version, verbose) => {
   return new Promise((resolve, reject) => {
     // TODO in the future, check if image already exists, and skip pulling
     const should_pull = true
@@ -72,7 +72,7 @@ const pullImage = (docker, base_image, version, single_view_output) => {
           // {"status":"Extracting","progressDetail":{"current":10310894,"total":10310894},
           // "progress":"[==================================================\u003e] 10.31 MB/10.31 MB",
           // "id":"c9590ff90c14"}
-          if (single_view_output) {
+          if (verbose) {
             console.log(JSON.parse(chunk).status)
           }
         })
@@ -85,7 +85,7 @@ const pullImage = (docker, base_image, version, single_view_output) => {
     }
   })
 }
-const buildImage = (docker, path, image_name, single_view_output) => {
+const buildImage = (docker, path, image_name, verbose) => {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(path)) {
       reject('Path "' + path + '" does not exist')
@@ -100,7 +100,7 @@ const buildImage = (docker, path, image_name, single_view_output) => {
         return
       }
       stream.on('data', (chunk) => {
-        if (single_view_output) {
+        if (verbose) {
           const parsed = JSON.parse(chunk.toString())
           var to_print = null
           if (parsed.status) {
@@ -122,7 +122,7 @@ const buildImage = (docker, path, image_name, single_view_output) => {
     })
   })
 }
-const runContainer = (docker, image_name, test_cmd, single_view_output) => {
+const runContainer = (docker, image_name, test_cmd, verbose) => {
   return new Promise((resolve, reject) => {
     var output = []
     const collect_output_stream = new stream.Writable({
@@ -131,7 +131,7 @@ const runContainer = (docker, image_name, test_cmd, single_view_output) => {
         next()
       }
     })
-    const outputter = single_view_output ? process.stdout : collect_output_stream
+    const outputter = verbose ? process.stdout : collect_output_stream
     docker.run(image_name, test_cmd, outputter, (err, data) => {
       if (err) {
         reject(err)
@@ -141,7 +141,7 @@ const runContainer = (docker, image_name, test_cmd, single_view_output) => {
         return
       }
       var to_resolve = {success: data.StatusCode === 0}
-      if (!single_view_output) {
+      if (!verbose) {
         to_resolve.output = output.join('')
       }
       resolve(to_resolve)
