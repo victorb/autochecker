@@ -26,10 +26,8 @@
     "type" : "git",
     "url" : "https://github.com/VictorBjelkholm/autochecker.git"
   },
-  {
-    "engines": {
-      "node" : ">=4.2.4"
-    }
+  "engines": {
+    "node" : ">=4.2.4"
   },
   "preferGlobal": true,
   "author": "Victor Bjelkholm <victorbjelkholm@gmail.com> (https://www.github.com/victorbjelkholm)",
