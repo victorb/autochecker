@@ -6,3 +6,4 @@ COPY package.json .
 RUN apk add --update git
 RUN npm install
 COPY . .
+CMD npm test

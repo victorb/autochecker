@@ -170,7 +170,7 @@ const onlyFailures = (result) => {
 }
 
 const testVersions = (versions) => {
-  console.log('autochecker', 'Running tests in ' + versions.length + ' different sessions')
+  console.log('autochecker', 'Running tests in ' + versions.length + ' different sessions | Path: ' + DIRECTORY_TO_TEST)
   async.parallelLimit(versions, process.env.TEST_LIMIT || os.cpus().length, (err, results) => {
     if (err) {
       logRed('Something went wrong when running the tests...')
