@@ -2,7 +2,7 @@
 
 autochecker helps you test your JavaScript modules in many different versions of NodeJS, rapidly and without thinking about it.
 
-Works well with CI as well!
+Works well with CI as well! ([See some example output](https://github.com/VictorBjelkholm/ruby-autochecker-example/))
 
 <p align="center">
   <img src="./demo.gif" alt="Demonstration of functionality">
