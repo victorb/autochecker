@@ -1,8 +1,12 @@
 # autochecker
 
-autochecker helps you test your JavaScript modules in many different versions of NodeJS, rapidly and without thinking about it.
+autochecker tests your libraries in many different versions of NodeJS, Ruby, Java and many other languages.
+
+Created to make it easier and effortless to make sure your library works in many versions of a language runtime.
 
 Works well with CI as well! ([See some example output](https://github.com/VictorBjelkholm/ruby-autochecker-example/))
+
+(Works out of the box with NodeJS projects right now, more in the future!)
 
 <p align="center">
   <img src="./demo.gif" alt="Demonstration of functionality">
@@ -11,7 +15,7 @@ Works well with CI as well! ([See some example output](https://github.com/Victor
 ## Requirements
 
 * Docker -> [install here](https://www.docker.com/products/docker-toolbox)
-* `package.json` `scripts.test` setup correctly
+* `package.json` `scripts.test` setup correctly (for NodeJS projects)
 * Two environment variables, `DOCKER_HOST` and `DOCKER_CERT_PATH` (comes by default with docker-machine)
 
 `DOCKER_HOST` should look similar to this: `tcp://192.168.99.100:2376`
@@ -24,7 +28,7 @@ As always, one step:
 
 * For one project > `npm install autochecker`
 
-* Globally on your computer > `npm install -g autochecker`
+* Globally on your computer OR to use with other languages > `npm install -g autochecker`
 
 For extra style points, make sure autochecker is run before publishing your modules:
 
@@ -36,7 +40,7 @@ In `package.json`:
 }
 ```
 
-## Running
+## Running NodeJS project out of the box
 
 By default, executing `autochecker` will run the tests on all available versions.
 
@@ -45,6 +49,10 @@ You can specify which versions you want to test by adding them in the end of the
 `autochecker 0.10 0.11 4 5.10.1`
 
 Versions comes from the `mhart/alpine-node` docker image tags
+
+## Running with other language (Ruby example)
+
+To see how you can run autochecker with a Ruby project, please take a look at this repository: https://github.com/VictorBjelkholm/ruby-autochecker-example/
 
 ## Setting max running tests
 
@@ -106,6 +114,12 @@ autochecker.runTestForVersion({
 See `cli.js` for usage with testing multiple versions at once.
 
 ## Changelog
+
+### 0.8.0
+
+* Pull right base image, instead of always mhart/alpine-node
+* Use minimist for parsing arguments
+* Fix issue with needing to be in a Git repository for running
 
 ### 0.7.1
 

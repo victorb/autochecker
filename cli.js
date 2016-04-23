@@ -46,6 +46,7 @@ const getDockerTemplate = () => {
   if (fs.existsSync(dockerTemplate)) {
     return fs.readFileSync(dockerTemplate, 'utf8')
   }
+  // TODO this default template, depends on which language we use
   const DEFAULT_DOCKER_TEMPLATE = `FROM mhart/alpine-node:$VERSION
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
@@ -71,6 +72,7 @@ const TEST_COMMAND = [] // Empty, is in Dockerfile
 const BASE_IMAGE = getBaseImageFromDockerfile(DOCKERFILE_TEMPLATE)
 const PROJECT_NAME = (function getProjectName () {
   try {
+    // TODO depends on language
     return require(DIRECTORY_TO_TEST + '/package.json').name
   } catch (err) {
     return path.basename(DIRECTORY_TO_TEST)
@@ -124,6 +126,7 @@ const docker = new Docker(DOCKER_CONFIG)
 //   }
 // }
 
+// TODO depends on language
 // From https://hub.docker.com/r/mhart/alpine-node/tags/
 // const possible_versions = ['0.10', '0.12', '4.0', '5.0']
 // TODO read this automatically from package.json.engines

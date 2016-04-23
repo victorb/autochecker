@@ -21,6 +21,7 @@ const copyApplicationToTempLocation = (path, new_path) => {
     fs.copy(path, new_path, {
       filter: (file) => {
         var should_include = true
+        // TODO this filter depends on language used
         if (file.indexOf('node_modules') !== -1) {
           should_include = false
         }
