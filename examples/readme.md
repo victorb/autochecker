@@ -14,3 +14,23 @@ directory >
 ## To run all of them:
 
 `./run_all_examples.sh`
+
+## Languages
+
+* [x] JavaScript
+* [x] Ruby
+* [x] Java
+* [ ] Swift
+* [ ] Golang
+* [ ] C#
+* [x] Python
+* [ ] Objective-C
+* [ ] C++
+* [ ] Perl
+* [ ] Scala
+* [x] Clojure
+* [ ] Lua
+* [ ] Haskell
+* [ ] Rust
+
+If you know any language here that haven't been checked, please help others out and try create a example for it!
