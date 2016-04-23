@@ -1,7 +1,7 @@
 {
   "name": "autochecker",
   "version": "0.7.3",
-  "description": "Test your JavaScript modules simultaneously in 32 different versions of NodeJS",
+  "description": "Test your libraries in many different versions of NodeJS, Ruby, Java and many other languages",
   "main": "index.js",
   "scripts": {
     "test": "mocha",
@@ -10,13 +10,28 @@
     "prepublish": "./cli.js 4.4.2 5.10.1"
   },
   "bin": {
-    "autochecker": "cli.js"
+    "autochecker": "./cli.js"
   },
   "keywords": [
     "testing",
     "versions",
     "nodejs"
   ],
+  "homepage": "http://victorbjelkholm.github.io/autochecker/",
+  "bugs": {
+    "url" : "https://github.com/victorbjelkholm/autochecker/issues",
+    "email" : "victorbjelkholm@gmail.com"
+  },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/VictorBjelkholm/autochecker.git"
+  },
+  {
+    "engines": {
+      "node" : ">=4.2.4"
+    }
+  },
+  "preferGlobal": true,
   "author": "Victor Bjelkholm <victorbjelkholm@gmail.com> (https://www.github.com/victorbjelkholm)",
   "license": "MIT",
   "dependencies": {
