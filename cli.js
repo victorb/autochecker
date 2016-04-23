@@ -56,12 +56,19 @@ CMD npm test
 `
   return DEFAULT_DOCKER_TEMPLATE
 }
+const getBaseImageFromDockerfile = (dockerfile) => {
+  if (dockerfile.indexOf('FROM') === -1) {
+    throw new Error('Dockerfile OR DockerTemplate does not contain FROM statement')
+  }
+  return dockerfile.match(/FROM\ (.*):\$VERSION/)[1]
+}
 
 const DOCKERFILE_TEMPLATE = getDockerTemplate()
 
 const DIRECTORY_TO_TEST = process.cwd()
 const TEST_COMMAND = [] // Empty, is in Dockerfile
-const BASE_IMAGE = 'mhart/alpine-node'
+
+const BASE_IMAGE = getBaseImageFromDockerfile(DOCKERFILE_TEMPLATE)
 const PROJECT_NAME = (function getProjectName () {
   try {
     return require(DIRECTORY_TO_TEST + '/package.json').name
