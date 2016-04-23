@@ -69,8 +69,15 @@ const PROJECT_NAME = (function getProjectName () {
     return path.basename(DIRECTORY_TO_TEST)
   }
 })()
-const GIT_COMMIT = git.long()
-const IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${GIT_COMMIT}`
+
+var IMAGE_NAME = null
+if (fs.existsSync(join(DIRECTORY_TO_TEST, '.git'))) {
+  const git_commit = git.long(DIRECTORY_TO_TEST)
+  IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${git_commit}`
+} else {
+  const path_hex = (new Buffer(DIRECTORY_TO_TEST)).toString('hex')
+  IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${path_hex}`
+}
 
 var DOCKER_CONFIG = {}
 if (use_docker_socket) {
