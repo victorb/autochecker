@@ -21,7 +21,7 @@ directory >
 * [x] Ruby
 * [x] Java
 * [ ] Swift
-* [ ] Golang
+* [x] Golang
 * [ ] C#
 * [x] Python
 * [ ] Objective-C
