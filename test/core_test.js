@@ -56,8 +56,13 @@ beforeEach(() => {
     run: (image_name, cmd, output, callback) => {
       callback(docker_mock_error_value, {
         StatusCode: docker_mock_run_statuscode
-      })
+      }, container_mock)
     }
+  }
+  container_mock = {
+     remove: (callback) => {
+       callback(null, null)
+     }
   }
 })
 after((done) => {

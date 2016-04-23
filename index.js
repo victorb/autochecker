@@ -133,19 +133,21 @@ const runContainer = (docker, image_name, test_cmd, verbose) => {
       }
     })
     const outputter = verbose ? process.stdout : collect_output_stream
-    docker.run(image_name, test_cmd, outputter, (err, data) => {
+    docker.run(image_name, test_cmd, outputter, (err, data, container) => {
       if (err) {
         reject(err)
       }
-      if (!data) {
+      if (!data || !container) {
         reject()
         return
       }
-      var to_resolve = {success: data.StatusCode === 0}
+      var to_resolve = { success: data.StatusCode === 0 }
       if (!verbose) {
         to_resolve.output = output.join('')
       }
-      resolve(to_resolve)
+      container.remove( (err, data) => {
+        resolve(to_resolve); 
+      })
     })
   })
 }
@@ -184,7 +186,9 @@ const runTestForVersion = (opts) => {
       const output = res.output
       logger(success ? colors.green('Test results: ✅') : colors.red('Test results: ❌'))
       callback(null, {success, version, output})
-    }).catch((err) => { callback(err) })
+    }).catch((err) => { 
+      callback(err.err) 
+    })
   }
 }
 module.exports = {
