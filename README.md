@@ -50,9 +50,11 @@ You can specify which versions you want to test by adding them in the end of the
 
 Versions comes from the `mhart/alpine-node` docker image tags
 
-## Running with other language (Ruby example)
+## Running with other languages
 
-To see how you can run autochecker with a Ruby project, please take a look at this repository: https://github.com/VictorBjelkholm/ruby-autochecker-example/
+To see how you can run autochecker with a Ruby project + CI integration, please take a look at this repository: https://github.com/VictorBjelkholm/ruby-autochecker-example/
+
+Otherwise, there is a couple of examples of other languages in the [/examples](/examples) directory
 
 ## Setting max running tests
 
