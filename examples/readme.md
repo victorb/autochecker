@@ -29,6 +29,7 @@ directory >
 * [ ] Perl
 * [ ] Scala
 * [x] Clojure
+* [x] PHP
 * [ ] Lua
 * [ ] Haskell
 * [ ] Rust
