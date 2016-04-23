@@ -198,7 +198,9 @@ const testVersions = (versions) => {
   })
 }
 
-if (process.argv[2] === 'ls') {
+const argv = require('minimist')(process.argv.slice(2))
+
+if (argv._[0] === 'ls') {
   console.log('Available versions:')
   console.log(default_versions_to_test)
   process.exit(0)
@@ -212,7 +214,7 @@ const createLogger = (line_id, verbose) => {
       color = (str) => colors.yellow(str)
     }
     if (verbose) {
-      console.log(color(msg))
+      console.log(color(line_id + ' - ' + msg))
     } else {
       clearScreen(1)
       linesToLog[line_id] = {msg, color}
@@ -242,16 +244,18 @@ const runTest = (version, verbose) => {
   })
 }
 
+const verbose = argv.verbose === true
+
 // Start testing everything
 // TODO extract this into cli.js and make proper
-if (process.argv[2] === undefined) {
+if (argv._.length === 0) {
   clearScreen()
-  testVersions(default_versions_to_test.map((version) => runTest(version, false)))
+  testVersions(default_versions_to_test.map((version) => runTest(version, verbose)))
 } else {
-  const to_test = process.argv.slice(2)
+  const to_test = argv._
   if (to_test.length > 1) {
     clearScreen()
-    testVersions(to_test.map((version) => runTest(version, false)))
+    testVersions(to_test.map((version) => runTest(version, verbose)))
   } else {
     console.log(colors.green('## Running tests in version ' + colors.blue(to_test[0]) + ' only'))
     runTest(to_test[0], true)((err, result) => {

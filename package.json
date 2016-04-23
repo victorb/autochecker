@@ -25,6 +25,7 @@
     "dockerode": "2.2.10",
     "fs-extra": "0.26.7",
     "git-rev-sync": "1.5.0",
+    "minimist": "1.2.0",
     "tar-fs": "1.12.0"
   },
   "devDependencies": {
