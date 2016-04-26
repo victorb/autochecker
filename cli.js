@@ -210,10 +210,32 @@ const testVersions = (versions) => {
 
 const argv = require('minimist')(process.argv.slice(2))
 
-if (argv._[0] === 'ls') {
-  console.log('Available versions:')
-  console.log(default_versions_to_test)
-  process.exit(0)
+const cmds = {
+  'ls': () => {
+    console.log('Available versions:')
+    console.log(default_versions_to_test)
+    return 0
+  },
+  'version': () => {
+    const current_version = require('./package.json').version
+    console.log(current_version)
+    return 0
+  },
+  'help': () => {
+    console.log('autochecker help')
+    console.log()
+    console.log('Commands: ')
+    console.log(' autochecker ' + Object.keys(cmds).join('\n autochecker '))
+    console.log(' autochecker 0.10 0.12')
+    return 0
+  }
+}
+
+const single_command = argv._[0]
+
+if (cmds[single_command]) {
+  const exit_code = cmds[single_command]()
+  process.exit(exit_code)
 }
 
 // Setup logging
