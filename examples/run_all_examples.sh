@@ -1,5 +1,7 @@
 #! /bin/sh
 
+set -e
+
 for d in $(ls)
 do
   test -d "$d" || continue

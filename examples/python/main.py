@@ -1,8 +1,5 @@
 import unittest
 
-async def something():
-  print("hey")
-
 def fun(x):
   print("Called fun")
   return x + 1
