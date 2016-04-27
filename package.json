@@ -7,7 +7,7 @@
     "test": "mocha",
     "test:watch": "npm test -- --watch --growl",
     "lint": "standard",
-    "prepublish": "./cli.js 4.4.2 5.10.1"
+    "prepublish": "./cli.js 4.4.2 5.10.1 6.0.0"
   },
   "bin": {
     "autochecker": "./cli.js"
