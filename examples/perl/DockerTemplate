@@ -1,0 +1,5 @@
+FROM perl:$VERSION
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+COPY . .
+CMD perl test.pl
