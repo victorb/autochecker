@@ -177,7 +177,7 @@ const testVersions = (versions) => {
       logRed(err)
       console.log('Full error:')
       console.log(err)
-      throw new Error(err)
+      process.exit(23)
     }
     var any_errors = false
     var successes = results.filter((result) => result.success).length
