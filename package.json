@@ -19,15 +19,15 @@
   ],
   "homepage": "http://victorbjelkholm.github.io/autochecker/",
   "bugs": {
-    "url" : "https://github.com/victorbjelkholm/autochecker/issues",
-    "email" : "victorbjelkholm@gmail.com"
+    "url": "https://github.com/victorbjelkholm/autochecker/issues",
+    "email": "victorbjelkholm@gmail.com"
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/VictorBjelkholm/autochecker.git"
+    "type": "git",
+    "url": "https://github.com/VictorBjelkholm/autochecker.git"
   },
   "engines": {
-    "node" : ">=4.2.4"
+    "node": ">=4.2.4"
   },
   "preferGlobal": true,
   "author": "Victor Bjelkholm <victorbjelkholm@gmail.com> (https://www.github.com/victorbjelkholm)",
@@ -36,6 +36,7 @@
     "async": "2.0.0-rc.3",
     "colors": "1.1.2",
     "dockerode": "2.2.10",
+    "es6-promise": "3.1.2",
     "fs-extra": "0.26.7",
     "git-rev-sync": "1.5.0",
     "minimist": "1.2.0",

@@ -15,9 +15,13 @@ const git = require('git-rev-sync')
 // Main logic
 const core = require('./index')
 
-const logGreen = (msg) => console.log(colors.green(msg))
-const logRed = (msg) => console.log(colors.red(msg))
-const clearScreen = (from) => {
+const logGreen = function (msg) {
+  console.log(colors.green(msg))
+}
+const logRed = function (msg) {
+  console.log(colors.red(msg))
+}
+const clearScreen = function (from) {
   if (from === undefined) {
     from = 0
   }
@@ -41,23 +45,24 @@ if (!docker_host && !use_docker_socket) {
 }
 
 // CONFIG
-const getDockerTemplate = () => {
+const getDockerTemplate = function () {
   const dockerTemplate = join(process.cwd(), 'DockerTemplate')
   if (fs.existsSync(dockerTemplate)) {
     return fs.readFileSync(dockerTemplate, 'utf8')
   }
   // TODO this default template, depends on which language we use
-  const DEFAULT_DOCKER_TEMPLATE = `FROM mhart/alpine-node:$VERSION
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
-COPY package.json .
-RUN npm install
-COPY . .
-CMD npm test
-`
+  const template = ['FROM mhart/alpine-node:$VERSION',
+  'RUN mkdir -p /usr/src/app',
+  'WORKDIR /usr/src/app',
+  'COPY package.json .',
+  'RUN npm install',
+  'COPY . .',
+  'CMD npm test'
+  ]
+  const DEFAULT_DOCKER_TEMPLATE = template.join('\n')
   return DEFAULT_DOCKER_TEMPLATE
 }
-const getBaseImageFromDockerfile = (dockerfile) => {
+const getBaseImageFromDockerfile = function (dockerfile) {
   if (dockerfile.indexOf('FROM') === -1) {
     throw new Error('Dockerfile OR DockerTemplate does not contain FROM statement')
   }
@@ -82,10 +87,10 @@ const PROJECT_NAME = (function getProjectName () {
 var IMAGE_NAME = null
 if (fs.existsSync(join(DIRECTORY_TO_TEST, '.git'))) {
   const git_commit = git.long(DIRECTORY_TO_TEST)
-  IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${git_commit}`
+  IMAGE_NAME = PROJECT_NAME + '_$VERSION:' + git_commit
 } else {
   const path_hex = (new Buffer(DIRECTORY_TO_TEST)).toString('hex')
-  IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${path_hex}`
+  IMAGE_NAME = PROJECT_NAME + '_$VERSION:' + path_hex
 }
 
 var DOCKER_CONFIG = {}
@@ -165,13 +170,13 @@ const default_versions_to_test = [
   '5.10.1'
 ]
 
-const onlyFailures = (result) => {
+const onlyFailures = function (result) {
   return !result.success
 }
 
-const testVersions = (versions) => {
+const testVersions = function (versions) {
   console.log('autochecker', 'Running tests in ' + versions.length + ' different sessions | Path: ' + DIRECTORY_TO_TEST)
-  async.parallelLimit(versions, process.env.TEST_LIMIT || os.cpus().length, (err, results) => {
+  async.parallelLimit(versions, process.env.TEST_LIMIT || os.cpus().length, function (err, results) {
     if (err) {
       logRed('Something went wrong when running the tests...')
       logRed(err)
@@ -180,18 +185,20 @@ const testVersions = (versions) => {
       process.exit(23)
     }
     var any_errors = false
-    var successes = results.filter((result) => result.success).length
+    var successes = results.filter(function (result) {
+      return result.success
+    }).length
     var failures = results.filter(onlyFailures).length
     console.log()
     if (failures > 0) {
       console.log(colors.red('# Failing tests'))
-      results.filter(onlyFailures).forEach((failure) => {
+      results.filter(onlyFailures).forEach(function (failure) {
         console.log(colors.blue('## Output from ' + failure.version))
         console.log(failure.output)
       })
     }
     console.log('== Results (Success/Fail ' + successes + '/' + failures + ') ==')
-    results.forEach((result) => {
+    results.forEach(function (result) {
       if (result.success) {
         logGreen('The tests did pass on version ' + result.version)
       } else {
@@ -211,17 +218,17 @@ const testVersions = (versions) => {
 const argv = require('minimist')(process.argv.slice(2))
 
 const cmds = {
-  'ls': () => {
+  'ls': function () {
     console.log('Available versions:')
     console.log(default_versions_to_test)
     return 0
   },
-  'version': () => {
+  'version': function () {
     const current_version = require('./package.json').version
     console.log(current_version)
     return 0
   },
-  'help': () => {
+  'help': function () {
     console.log('autochecker help')
     console.log()
     console.log('Commands: ')
@@ -240,17 +247,19 @@ if (cmds[single_command]) {
 
 // Setup logging
 var linesToLog = {}
-const createLogger = (line_id, verbose) => {
-  return (msg, color) => {
+const createLogger = function (line_id, verbose) {
+  return function (msg, color) {
     if (color === undefined) {
-      color = (str) => colors.yellow(str)
+      color = function (str) {
+        return colors.yellow(str)
+      }
     }
     if (verbose) {
       console.log(color(line_id + ' - ' + msg))
     } else {
       clearScreen(1)
       linesToLog[line_id] = {msg, color}
-      Object.keys(linesToLog).forEach((line, index) => {
+      Object.keys(linesToLog).forEach(function (line, index) {
         const lineToLog = linesToLog[line].msg
         const colorToLog = linesToLog[line].color
         readline.cursorTo(process.stdout, 0, index + 1)
@@ -260,7 +269,7 @@ const createLogger = (line_id, verbose) => {
   }
 }
 
-const runTest = (version, verbose) => {
+const runTest = function (version, verbose) {
   const logger = createLogger(version, verbose)
   return core.runTestForVersion({
     logger,
@@ -282,15 +291,19 @@ const verbose = argv.verbose === true
 // TODO extract this into cli.js and make proper
 if (argv._.length === 0) {
   clearScreen()
-  testVersions(default_versions_to_test.map((version) => runTest(version, verbose)))
+  testVersions(default_versions_to_test.map(function (version) {
+    return runTest(version, verbose)
+  }))
 } else {
   const to_test = argv._
   if (to_test.length > 1) {
     clearScreen()
-    testVersions(to_test.map((version) => runTest(version, verbose)))
+    testVersions(to_test.map(function (version) {
+      return runTest(version, verbose)
+    }))
   } else {
     console.log(colors.green('## Running tests in version ' + colors.blue(to_test[0]) + ' only'))
-    runTest(to_test[0], true)((err, result) => {
+    runTest(to_test[0], true)(function (err, result) {
       if (err) {
         console.log(colors.red(err))
         process.exit(1)

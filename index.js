@@ -8,18 +8,19 @@ const os = require('os')
 const stream = require('stream')
 const colors = require('colors')
 const tar = require('tar-fs')
+const Promise = require('es6-promise').Promise
 
-const returnOrThrow = (attribute, name) => {
+const returnOrThrow = function (attribute, name) {
   if (attribute === undefined) {
     throw new Error('Option ' + name + ' was undefined but it needs to be defined')
   }
   return attribute
 }
 
-const copyApplicationToTempLocation = (path, new_path) => {
-  return new Promise((resolve, reject) => {
+const copyApplicationToTempLocation = function (path, new_path) {
+  return new Promise(function (resolve, reject) {
     fs.copy(path, new_path, {
-      filter: (file) => {
+      filter: function (file) {
         var should_include = true
         // TODO this filter depends on language used
         if (file.indexOf('node_modules') !== -1) {
@@ -30,7 +31,7 @@ const copyApplicationToTempLocation = (path, new_path) => {
         }
         return should_include
       }
-    }, (err) => {
+    }, function (err) {
       if (err) {
         return reject(err.toString())
       } else {
@@ -39,16 +40,16 @@ const copyApplicationToTempLocation = (path, new_path) => {
     })
   })
 }
-const writeApplicationDockerfile = (path, version, dockerfile) => {
-  return new Promise((resolve, reject) => {
+const writeApplicationDockerfile = function (path, version, dockerfile) {
+  return new Promise(function (resolve, reject) {
     if (dockerfile.indexOf('$VERSION') === -1) {
       return reject('Dockerfile did not contain $VERSION')
     }
     const contents = dockerfile.replace('$VERSION', version)
-    fs.writeFile(path + '/Dockerfile', contents, (err) => {
+    fs.writeFile(path + '/Dockerfile', contents, function (err) {
       if (err) {
         if (err.code === 'ENOENT') {
-          return reject(`Directory "${path}" did not exist`)
+          return reject('Directory "' + path + '" did not exist')
         } else {
           return reject(err.toString())
         }
@@ -58,35 +59,37 @@ const writeApplicationDockerfile = (path, version, dockerfile) => {
     })
   })
 }
-const parseStreamChunk = (chunk) => {
+const parseStreamChunk = function (chunk) {
   const chunkStr = chunk.toString()
   const splitted = chunkStr.split('\r\n')
-  const parsedLines = splitted.map((str) => {
+  const parsedLines = splitted.map(function (str) {
     try {
       return JSON.parse(str)
     } catch (_) {
       return null
     }
   })
-  return parsedLines.filter((l) => l !== null)
+  return parsedLines.filter(function (l) {
+    return l !== null
+  })
 }
-const pullImage = (docker, base_image, version, verbose, logger) => {
-  return new Promise((resolve, reject) => {
+const pullImage = function (docker, base_image, version, verbose, logger) {
+  return new Promise(function (resolve, reject) {
     // TODO in the future, check if image already exists, and skip pulling
     const should_pull = true
     if (should_pull) {
-      docker.pull(`${base_image}:${version}`, (err, stream) => {
+      docker.pull(base_image + ':' + version, function (err, stream) {
         if (err) {
           return reject(err)
         }
-        stream.on('data', (chunk) => {
+        stream.on('data', function (chunk) {
           // TODO when pulling, chunk also have progress property we should print
           // {"status":"Extracting","progressDetail":{"current":10310894,"total":10310894},
           // "progress":"[==================================================\u003e] 10.31 MB/10.31 MB",
           // "id":"c9590ff90c14"}
           if (verbose) {
             const chunks = parseStreamChunk(chunk)
-            chunks.forEach((mini_chunk) => {
+            chunks.forEach(function (mini_chunk) {
               const status = mini_chunk.status
               if (status !== 'Downloading' && status !== 'Extracting') {
                 console.log(mini_chunk.status)
@@ -94,7 +97,7 @@ const pullImage = (docker, base_image, version, verbose, logger) => {
             })
           }
         })
-        stream.on('end', () => {
+        stream.on('end', function () {
           return resolve(err)
         })
       })
@@ -103,46 +106,49 @@ const pullImage = (docker, base_image, version, verbose, logger) => {
     }
   })
 }
-const buildImage = (docker, path, image_name, verbose, logger) => {
-  return new Promise((resolve, reject) => {
+const buildImage = function (docker, path, image_name, verbose, logger) {
+  return new Promise(function (resolve, reject) {
     if (!fs.existsSync(path)) {
       return reject('Path "' + path + '" does not exist')
     }
     const tarStream = tar.pack(path)
-    docker.buildImage(tarStream, {t: image_name}, (err, stream) => {
+    docker.buildImage(tarStream, {t: image_name}, function (err, stream) {
       if (err) {
         return reject(err)
       }
       if (!stream) {
         return reject()
       }
-      stream.on('data', (chunk) => {
+      stream.on('data', function (chunk) {
         const chunks = parseStreamChunk(chunk)
-        if (chunks[chunks.length - 1].error) {
-          return reject(chunks[chunks.length - 1].error)
+        const last_chunk = chunks[chunks.length - 1]
+        if (last_chunk.error) {
+          return reject(last_chunk.error)
         }
         if (verbose) {
-          chunks.forEach((mini_chunk) => process.stdout.write(mini_chunk.stream))
+          chunks.forEach(function (mini_chunk) {
+            process.stdout.write(mini_chunk.stream)
+          })
         }
       })
-      stream.on('end', () => {
+      stream.on('end', function () {
         return resolve(err)
       })
     })
   })
 }
-const filterOutputStream = (chunk) => {
-  return chunk.toString().split('\r\n').filter((line) => {
+const filterOutputStream = function (chunk) {
+  return chunk.toString().split('\r\n').filter(function (line) {
     return line !== null && line !== undefined && line.trim() !== ''
   })
 }
-const runContainer = (docker, image_name, test_cmd, verbose, logger) => {
-  return new Promise((resolve, reject) => {
+const runContainer = function (docker, image_name, test_cmd, verbose, logger) {
+  return new Promise(function (resolve, reject) {
     var output = []
     const collect_output_stream = new stream.Writable({
-      write: (chunk, encoding, next) => {
+      write: function (chunk, encoding, next) {
         if (verbose) {
-          filterOutputStream(chunk).forEach((line) => {
+          filterOutputStream(chunk).forEach(function (line) {
             console.log(line)
           })
         }
@@ -151,7 +157,7 @@ const runContainer = (docker, image_name, test_cmd, verbose, logger) => {
       }
     })
     // const outputter = verbose ? process.stdout : collect_output_stream
-    docker.run(image_name, test_cmd, collect_output_stream, (err, data) => {
+    docker.run(image_name, test_cmd, collect_output_stream, function (err, data) {
       if (err) {
         return reject(err)
       }
@@ -164,7 +170,7 @@ const runContainer = (docker, image_name, test_cmd, verbose, logger) => {
     })
   })
 }
-const runTestForVersion = (opts) => {
+const runTestForVersion = function (opts) {
   const logger = returnOrThrow(opts.logger, 'logger')
   const docker = returnOrThrow(opts.docker, 'docker')
   const version = returnOrThrow(opts.version, 'version')
@@ -176,37 +182,37 @@ const runTestForVersion = (opts) => {
   const base_image = returnOrThrow(opts.base_image, 'base_image')
   const verbose = returnOrThrow(opts.verbose, 'verbose')
 
-  return (callback) => {
+  return function (callback) {
     const tmp_dir = os.tmpdir()
 
-    const new_directory = `${tmp_dir}/autochecker_${name}_${version}`
+    const new_directory = tmp_dir + '/autochecker_' + name + '_' + version
     const version_image_name = image_name.replace('$VERSION', version)
     logger('copying files')
-    copyApplicationToTempLocation(path, new_directory).then(() => {
+    copyApplicationToTempLocation(path, new_directory).then(function () {
       logger('writing dockerfile')
       return writeApplicationDockerfile(new_directory, version, dockerfile)
-    }).then(() => {
-      logger(`pulling image ${base_image}:${version}`)
+    }).then(function () {
+      logger('pulling image ' + base_image + ':' + version)
       return pullImage(docker, base_image, version, verbose, logger)
-    }).then(() => {
+    }).then(function () {
       logger('building image')
       return buildImage(docker, new_directory, version_image_name, verbose, logger)
-    }).then(() => {
+    }).then(function () {
       logger('running container')
       return runContainer(docker, version_image_name, test_cmd, verbose, logger)
-    }).then((res) => {
+    }).then(function (res) {
       const success = res.success
       const output = res.output
       logger(success ? colors.green('Test results: ✅') : colors.red('Test results: ❌'))
-      callback(null, {success, version, output})
-    }).catch((err) => { callback(err) })
+      callback(null, {success: success, version: version, output: output})
+    }).catch(function (err) { callback(err) })
   }
 }
 module.exports = {
-  runTestForVersion,
-  copyApplicationToTempLocation,
-  writeApplicationDockerfile,
-  pullImage,
-  buildImage,
-  runContainer
+  runTestForVersion: runTestForVersion,
+  copyApplicationToTempLocation: copyApplicationToTempLocation,
+  writeApplicationDockerfile: writeApplicationDockerfile,
+  pullImage: pullImage,
+  buildImage: buildImage,
+  runContainer: runContainer
 }
