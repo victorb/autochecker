@@ -1,0 +1,9 @@
+FROM python:$VERSION
+
+RUN mkdir -p /usr/src/app
+
+WORKDIR /usr/src/app
+
+COPY . .
+
+CMD python main.py

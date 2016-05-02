@@ -1,19 +1,35 @@
 {
   "name": "autochecker",
-  "version": "0.1.0",
-  "description": "Test your JavaScript modules simultaneously in 32 different versions of NodeJS",
+  "version": "0.9.1",
+  "description": "Test your libraries in many different versions of NodeJS, Ruby, Java and many other languages",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"NO TESTS YET! Ironic huh?\";exit 1"
+    "test": "mocha",
+    "test:watch": "npm test -- --watch --growl",
+    "lint": "standard",
+    "prepublish": "./cli.js 4.4.2 5.10.1 6.0.0"
   },
   "bin": {
-    "autochecker": "index.js"
+    "autochecker": "./cli.js"
   },
   "keywords": [
     "testing",
     "versions",
     "nodejs"
   ],
+  "homepage": "http://victorbjelkholm.github.io/autochecker/",
+  "bugs": {
+    "url" : "https://github.com/victorbjelkholm/autochecker/issues",
+    "email" : "victorbjelkholm@gmail.com"
+  },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/VictorBjelkholm/autochecker.git"
+  },
+  "engines": {
+    "node" : ">=4.2.4"
+  },
+  "preferGlobal": true,
   "author": "Victor Bjelkholm <victorbjelkholm@gmail.com> (https://www.github.com/victorbjelkholm)",
   "license": "MIT",
   "dependencies": {
@@ -22,6 +38,19 @@
     "dockerode": "2.2.10",
     "fs-extra": "0.26.7",
     "git-rev-sync": "1.5.0",
+    "minimist": "1.2.0",
     "tar-fs": "1.12.0"
-  }
+  },
+  "devDependencies": {
+    "chai": "3.5.0",
+    "chai-as-promised": "5.3.0",
+    "mocha": "2.4.5",
+    "standard": "6.0.8"
+  },
+  "files": [
+    ".dockerignore",
+    "index.js",
+    "cli.js",
+    "demo.gif"
+  ]
 }

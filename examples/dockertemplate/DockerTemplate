@@ -1,0 +1,9 @@
+FROM mhart/alpine-node:$VERSION
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+COPY package.json .
+# Adding extra tools
+RUN apk add --update git
+RUN npm install
+COPY . .
+CMD npm test

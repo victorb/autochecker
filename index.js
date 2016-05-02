@@ -1,233 +1,212 @@
-#! /usr/bin/env node
-const os = require('os')
-const url = require('url')
-const join = require('path').join
-
-const Docker = require('dockerode')
+/*
+ * This is the file for the main logic of the application.
+ * Everything basically is here, everything else is just gluing this together
+ *
+ */
 const fs = require('fs-extra')
-const async = require('async')
-const colors = require('colors/safe')
-const git = require('git-rev-sync')
+const os = require('os')
+const stream = require('stream')
+const colors = require('colors')
 const tar = require('tar-fs')
 
-const logGreen = (msg) => console.log(colors.green(msg))
-const logRed = (msg) => console.log(colors.red(msg))
-const logBlue = (msg) => console.log(colors.blue(msg))
-const logYellow = (msg) => console.log(colors.yellow(msg))
-const logMagenta = (msg) => console.log(colors.magenta(msg))
-
-if (process.env.DOCKER_HOST === undefined) {
-  logRed('environment variable DOCKER_HOST looks empty')
-  console.log('Should be similar to this: "tcp://192.168.99.100:2376"')
-  console.log('If you are using docker-machine, running "eval $(docker-machine env default)" should fix this')
-  process.exit(1)
-}
-
-// CONFIG
-function getDockerTemplate() {
-  const DockerTemplateFile = join(process.cwd(), 'DockerTemplate')
-  if (fs.existsSync(DockerTemplateFile)) {
-    console.log('Using docker template file', DockerTemplateFile)
-    return fs.readFileSync(DockerTemplateFile, 'utf8')
+const returnOrThrow = (attribute, name) => {
+  if (attribute === undefined) {
+    throw new Error('Option ' + name + ' was undefined but it needs to be defined')
   }
-  const DEFAULT_DOCKER_TEMPLATE = `FROM mhart/alpine-node:$VERSION
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
-COPY package.json .
-RUN npm install
-COPY . .
-`
-  return DEFAULT_DOCKER_TEMPLATE
+  return attribute
 }
 
-const DOCKER_PROTOCOL = 'https'
-const parsed_url = url.parse(process.env.DOCKER_HOST)
-const DOCKER_HOST = parsed_url.hostname
-const DOCKER_PORT = parsed_url.port
-const CERT_PATH = process.env.DOCKER_CERT_PATH
-const DOCKERFILE_TEMPLATE = getDockerTemplate()
-
-const DIRECTORY_TO_TEST = process.cwd()
-const TEST_COMMAND = ['npm', 'test']
-const BASE_IMAGE = 'mhart/alpine-node'
-const PROJECT_NAME = require(DIRECTORY_TO_TEST + '/package.json').name
-const GIT_COMMIT = git.long()
-const IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${GIT_COMMIT}`
-const DOCKER_CONFIG = {
-  protocol: DOCKER_PROTOCOL,
-  host: DOCKER_HOST,
-  port: DOCKER_PORT,
-  ca: fs.readFileSync(join(CERT_PATH, 'ca.pem')),
-  cert: fs.readFileSync(join(CERT_PATH, 'cert.pem')),
-  key: fs.readFileSync(join(CERT_PATH, 'key.pem'))
-}
-const TMP_DIR = os.tmpdir()
-// END CONFIG
-
-// Initialize docker
-const docker = new Docker(DOCKER_CONFIG)
-
-// TODO fix callback hell
-const runTestForVersion = (version, show_output) => {
-  return (callback) => {
-    const new_directory = TMP_DIR + '/autochecker_' + PROJECT_NAME + version
-
-    fs.copy(DIRECTORY_TO_TEST, new_directory, {filter: (file) => {
-      var should_copy = true
-      // TODO find a way to reuse node_module but rebuild if necessary
-      if (file.indexOf('node_modules') !== -1) {
-        should_copy = false
-      }
-      if (file.indexOf('.git') !== -1) {
-        should_copy = false
-      }
-      return should_copy
-    }}, (err) => {
-      if (err) {
-        logRed(version + '\t| Something went wrong in copying files...')
-        callback(err, 1)
-      }
-      // TODO remove sync operations like these
-      fs.writeFileSync(new_directory + '/Dockerfile', DOCKERFILE_TEMPLATE.replace('$VERSION', version))
-
-      logMagenta(version + '\t| Pulling base image for version')
-      docker.pull(`${BASE_IMAGE}:${version}`, (err, stream) => {
-        // TODO extract error handling
-        if (err) {
-          logRed(version + '\t| Something went wrong in pulling image...')
-          callback(err, 1)
+const copyApplicationToTempLocation = (path, new_path) => {
+  return new Promise((resolve, reject) => {
+    fs.copy(path, new_path, {
+      filter: (file) => {
+        var should_include = true
+        // TODO this filter depends on language used
+        if (file.indexOf('node_modules') !== -1) {
+          should_include = false
         }
-        docker.modem.followProgress(stream, () => {
-          const tarStream = tar.pack(new_directory, {
-            ignoreFiles: ['.gitignore', '.dockerignore']
-          })
-          const img_name_with_version = IMAGE_NAME.replace('$VERSION', version)
-          logYellow(version + '\t| Building image')
-          docker.buildImage(tarStream, {
-            t: img_name_with_version
-          }, (error, output) => {
-            if (error) {
-              logRed(version + '\t| Something went wrong in building image...')
-              callback(error, 1)
-            }
-            docker.modem.followProgress(output, () => {
-              logBlue(version + '\t| finished building, running tests...')
-              docker.run(img_name_with_version, TEST_COMMAND, show_output ? process.stdout : null, (err, data, container) => {
-                if (err) {
-                  logRed(version + '\t| Something went wrong in running container...')
-                  callback(err, 1)
-                }
-                // TODO implement proper cleanup
-                // fs.remove(new_directory)
-                logGreen(version + '\t| Done running tests for version ' + version + '!')
-                callback(null, {statusCode: data.StatusCode, version: version})
-              })
-            }, (chunk) => {
-              // Building container
-              if (show_output) {
-                process.stdout.write(version + '\t| ' + chunk.stream)
+        if (file.indexOf('.git') !== -1) {
+          should_include = false
+        }
+        return should_include
+      }
+    }, (err) => {
+      if (err) {
+        return reject(err.toString())
+      } else {
+        return resolve(err)
+      }
+    })
+  })
+}
+const writeApplicationDockerfile = (path, version, dockerfile) => {
+  return new Promise((resolve, reject) => {
+    if (dockerfile.indexOf('$VERSION') === -1) {
+      return reject('Dockerfile did not contain $VERSION')
+    }
+    const contents = dockerfile.replace('$VERSION', version)
+    fs.writeFile(path + '/Dockerfile', contents, (err) => {
+      if (err) {
+        if (err.code === 'ENOENT') {
+          return reject(`Directory "${path}" did not exist`)
+        } else {
+          return reject(err.toString())
+        }
+      } else {
+        return resolve(err)
+      }
+    })
+  })
+}
+const parseStreamChunk = (chunk) => {
+  const chunkStr = chunk.toString()
+  const splitted = chunkStr.split('\r\n')
+  const parsedLines = splitted.map((str) => {
+    try {
+      return JSON.parse(str)
+    } catch (_) {
+      return null
+    }
+  })
+  return parsedLines.filter((l) => l !== null)
+}
+const pullImage = (docker, base_image, version, verbose, logger) => {
+  return new Promise((resolve, reject) => {
+    // TODO in the future, check if image already exists, and skip pulling
+    const should_pull = true
+    if (should_pull) {
+      docker.pull(`${base_image}:${version}`, (err, stream) => {
+        if (err) {
+          return reject(err)
+        }
+        stream.on('data', (chunk) => {
+          // TODO when pulling, chunk also have progress property we should print
+          // {"status":"Extracting","progressDetail":{"current":10310894,"total":10310894},
+          // "progress":"[==================================================\u003e] 10.31 MB/10.31 MB",
+          // "id":"c9590ff90c14"}
+          if (verbose) {
+            const chunks = parseStreamChunk(chunk)
+            chunks.forEach((mini_chunk) => {
+              const status = mini_chunk.status
+              if (status !== 'Downloading' && status !== 'Extracting') {
+                console.log(mini_chunk.status)
               }
             })
-          })
-        }, (chunk) => {
-          // Pulling image
-          if (show_output) {
-            console.log(version + '\t| ' + chunk.status)
           }
         })
+        stream.on('end', () => {
+          return resolve(err)
+        })
       })
-    })
-  }
-}
-
-// From https://hub.docker.com/r/mhart/alpine-node/tags/
-// const possible_versions = ['0.10', '0.12', '4.0', '5.0']
-// TODO read this automatically from package.json.engines
-const default_versions_to_test = [
-  '0.10.41',
-  '0.10.42',
-  '0.10.43',
-  '0.10.44',
-  '0.12.9',
-  '0.12.10',
-  '0.12.11',
-  '0.12.12',
-  '0.12.13',
-  '4.2.4',
-  '4.2.5',
-  '4.2.6',
-  '4.3.0',
-  '4.3.1',
-  '4.3.2',
-  '4.4.0',
-  '4.4.1',
-  '4.4.2',
-  '5.1.1',
-  '5.2.0',
-  '5.3.0',
-  '5.4.0',
-  '5.4.1',
-  '5.5.0',
-  '5.6.0',
-  '5.7.0',
-  '5.7.1',
-  '5.8.0',
-  '5.9.0',
-  '5.9.1',
-  '5.10.0',
-  '5.10.1'
-]
-
-const testVersions = (versions) => {
-  console.log('Running tests in ' + versions.length + ' different NodeJS versions')
-  async.parallel(versions, (err, results) => {
-    if (err) {
-      logRed('Something went wrong in running tests...')
-      throw new Error(err)
-    }
-    var any_errors = false
-    var successes = results.filter((result) => result.statusCode === 0).length
-    var failures = results.filter((result) => result.statusCode !== 0).length
-    console.log('== Results (Success/Fail ' + successes + '/' + failures + ') ==')
-    results.forEach((result) => {
-      if (result.statusCode !== 0) {
-        logRed('The tests did not pass on version ' + result.version)
-        any_errors = true
-      } else {
-        logGreen('The tests did pass on version ' + result.version)
-      }
-    })
-    if (any_errors) {
-      process.exit(1)
     } else {
-      process.exit(0)
+      return resolve(null)
     }
   })
 }
-
-// Start testing everything
-// TODO extract this into cli.js and make proper
-if (process.argv[2] === undefined) {
-  testVersions(default_versions_to_test.map((version) => runTestForVersion(version, false)))
-} else {
-  const to_test = process.argv.slice(2)
-  if (to_test.length > 1) {
-    testVersions(to_test.map((version) => runTestForVersion(version, false)))
-  } else {
-    console.log('Running tests in 1 NodeJS version')
-    runTestForVersion(to_test[0], true)((err, result) => {
+const buildImage = (docker, path, image_name, verbose, logger) => {
+  return new Promise((resolve, reject) => {
+    if (!fs.existsSync(path)) {
+      return reject('Path "' + path + '" does not exist')
+    }
+    const tarStream = tar.pack(path)
+    docker.buildImage(tarStream, {t: image_name}, (err, stream) => {
       if (err) {
-        logRed('Something went wrong in running tests...')
-        throw new Error(err)
+        return reject(err)
       }
-      console.log('== Results ==')
-      if (result.statusCode !== 0) {
-        logRed('The tests did not pass on version ' + result.version)
-        process.exit(1)
-      } else {
-        logGreen('The tests did pass on version ' + result.version)
-        process.exit(0)
+      if (!stream) {
+        return reject()
+      }
+      stream.on('data', (chunk) => {
+        const chunks = parseStreamChunk(chunk)
+        if (chunks[chunks.length - 1].error) {
+          return reject(chunks[chunks.length - 1].error)
+        }
+        if (verbose) {
+          chunks.forEach((mini_chunk) => process.stdout.write(mini_chunk.stream))
+        }
+      })
+      stream.on('end', () => {
+        return resolve(err)
+      })
+    })
+  })
+}
+const filterOutputStream = (chunk) => {
+  return chunk.toString().split('\r\n').filter((line) => {
+    return line !== null && line !== undefined && line.trim() !== ''
+  })
+}
+const runContainer = (docker, image_name, test_cmd, verbose, logger) => {
+  return new Promise((resolve, reject) => {
+    var output = []
+    const collect_output_stream = new stream.Writable({
+      write: (chunk, encoding, next) => {
+        if (verbose) {
+          filterOutputStream(chunk).forEach((line) => {
+            console.log(line)
+          })
+        }
+        output.push(chunk.toString())
+        next()
       }
     })
+    // const outputter = verbose ? process.stdout : collect_output_stream
+    docker.run(image_name, test_cmd, collect_output_stream, (err, data) => {
+      if (err) {
+        return reject(err)
+      }
+      if (!data) {
+        return reject()
+      }
+      var to_resolve = {success: data.StatusCode === 0}
+      to_resolve.output = output.join('')
+      return resolve(to_resolve)
+    })
+  })
+}
+const runTestForVersion = (opts) => {
+  const logger = returnOrThrow(opts.logger, 'logger')
+  const docker = returnOrThrow(opts.docker, 'docker')
+  const version = returnOrThrow(opts.version, 'version')
+  const name = returnOrThrow(opts.name, 'name')
+  const test_cmd = returnOrThrow(opts.test_cmd, 'test_cmd')
+  const image_name = returnOrThrow(opts.image_name, 'image_name')
+  const path = returnOrThrow(opts.path, 'path')
+  const dockerfile = returnOrThrow(opts.dockerfile, 'dockerfile')
+  const base_image = returnOrThrow(opts.base_image, 'base_image')
+  const verbose = returnOrThrow(opts.verbose, 'verbose')
+
+  return (callback) => {
+    const tmp_dir = os.tmpdir()
+
+    const new_directory = `${tmp_dir}/autochecker_${name}_${version}`
+    const version_image_name = image_name.replace('$VERSION', version)
+    logger('copying files')
+    copyApplicationToTempLocation(path, new_directory).then(() => {
+      logger('writing dockerfile')
+      return writeApplicationDockerfile(new_directory, version, dockerfile)
+    }).then(() => {
+      logger(`pulling image ${base_image}:${version}`)
+      return pullImage(docker, base_image, version, verbose, logger)
+    }).then(() => {
+      logger('building image')
+      return buildImage(docker, new_directory, version_image_name, verbose, logger)
+    }).then(() => {
+      logger('running container')
+      return runContainer(docker, version_image_name, test_cmd, verbose, logger)
+    }).then((res) => {
+      const success = res.success
+      const output = res.output
+      logger(success ? colors.green('Test results: ✅') : colors.red('Test results: ❌'))
+      callback(null, {success, version, output})
+    }).catch((err) => { callback(err) })
   }
+}
+module.exports = {
+  runTestForVersion,
+  copyApplicationToTempLocation,
+  writeApplicationDockerfile,
+  pullImage,
+  buildImage,
+  runContainer
 }

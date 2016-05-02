@@ -1,0 +1,5 @@
+machine:
+  services:
+    - docker
+  node:
+    version: 5.11.0
