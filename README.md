@@ -1,5 +1,7 @@
 # autochecker
 
+[![CircleCI](https://circleci.com/gh/VictorBjelkholm/autochecker/tree/master.svg?style=svg)](https://circleci.com/gh/VictorBjelkholm/autochecker/tree/master)
+
 autochecker tests your libraries in many different versions of NodeJS, Ruby, Java and many other languages.
 
 Created to make it easier and effortless to make sure your library works in many versions of a language runtime.
