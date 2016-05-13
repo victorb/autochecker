@@ -50,9 +50,9 @@ const getDockerTemplate = () => {
   const DEFAULT_DOCKER_TEMPLATE = `FROM mhart/alpine-node:$VERSION
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
-COPY package.json .
+COPY package.json /usr/src/app
 RUN npm install
-COPY . .
+COPY . /usr/src/app
 CMD npm test
 `
   return DEFAULT_DOCKER_TEMPLATE
