@@ -1,6 +1,6 @@
 {
   "name": "autochecker",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Test your libraries in many different versions of NodeJS, Ruby, Java and many other languages",
   "main": "index.js",
   "scripts": {
