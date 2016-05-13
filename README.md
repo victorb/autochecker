@@ -78,6 +78,7 @@ COPY package.json .
 RUN apk add --update git
 RUN npm install
 COPY . .
+CMD npm test
 ```
 
 Variable `$VERSION` will be replaced by autochecker. More information about alpine images

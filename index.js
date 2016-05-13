@@ -118,7 +118,7 @@ const buildImage = (docker, path, image_name, verbose, logger) => {
       }
       stream.on('data', (chunk) => {
         const chunks = parseStreamChunk(chunk)
-        if (chunks[chunks.length - 1].error) {
+        if (chunks.length && chunks[chunks.length - 1].error) {
           return reject(chunks[chunks.length - 1].error)
         }
         if (verbose) {
