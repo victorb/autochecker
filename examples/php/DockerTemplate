@@ -1,9 +1,9 @@
 FROM php:$VERSION
 
+WORKDIR /usr/src/app
+
 RUN wget https://phar.phpunit.de/phpunit.phar
 
 COPY . /usr/src/app
-WORKDIR /usr/src/app
-
 
 CMD php phpunit.phar test.php
