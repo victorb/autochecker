@@ -10,7 +10,7 @@ const Docker = require('dockerode')
 const fs = require('fs-extra')
 const async = require('async')
 const colors = require('colors/safe')
-const git = require('git-rev-sync')
+const shortid = require('shortid')
 
 // Main logic
 const core = require('./index')
@@ -79,14 +79,7 @@ const PROJECT_NAME = (function getProjectName () {
   }
 })()
 
-var IMAGE_NAME = null
-if (fs.existsSync(join(DIRECTORY_TO_TEST, '.git'))) {
-  const git_commit = git.long(DIRECTORY_TO_TEST)
-  IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${git_commit}`
-} else {
-  const path_hex = (new Buffer(DIRECTORY_TO_TEST)).toString('hex')
-  IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${path_hex}`
-}
+const IMAGE_NAME = `${PROJECT_NAME}_$VERSION:${shortid()}`
 
 var DOCKER_CONFIG = {}
 if (use_docker_socket) {

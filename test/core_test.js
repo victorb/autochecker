@@ -9,10 +9,6 @@ const join = require('path').join
 const stream = require('stream')
 const core = require('../index')
 
-const folderExists = (path) => {
-  return fs.existsSync(join(__dirname, path))
-}
-
 const createMockStreamFunc = () => {
   return (image, options, callback) => {
     if (callback === undefined) {
@@ -45,12 +41,10 @@ const writeTestProject = () => {
   fs.writeFileSync(join(__dirname, 'test_project', 'package.json'), JSON.stringify(PACKAGE_FILE, null, 2))
 }
 
-var docker_mock = null
 var docker_mock_error_value = null
 var docker_mock_run_statuscode = 0
-beforeEach(() => {
-  docker_mock_error_value = null
-  docker_mock = {
+const createDockerMock = () => {
+  return {
     pull: createMockStreamFunc(),
     buildImage: createMockStreamFunc(),
     run: (image_name, cmd, output, callback) => {
@@ -59,6 +53,9 @@ beforeEach(() => {
       })
     }
   }
+}
+beforeEach(() => {
+  docker_mock_error_value = null
 })
 after((done) => {
   fs.remove(join(__dirname, 'tmp_test_project'), () => {
@@ -68,94 +65,68 @@ after((done) => {
   })
 })
 describe('Application Core Logic', () => {
-  describe('Copy application', () => {
-    beforeEach(writeTestProject)
-    it('Can copy directory', (done) => {
-      // Arrange
-      var folder_exists = folderExists('test_project')
-      var git_folder_exists = folderExists('test_project/.git')
-      var node_modules_folder_exists = folderExists('test_project/node_modules')
-      assert.strictEqual(folder_exists, true)
-      assert.strictEqual(git_folder_exists, true)
-      assert.strictEqual(node_modules_folder_exists, true)
-
-      // Act
-      core.copyApplicationToTempLocation(
-        join(__dirname, 'test_project'),
-        join(__dirname, 'tmp_test_project')
-      ).then(() => {
-        folder_exists = folderExists('tmp_test_project')
-        git_folder_exists = folderExists('tmp_test_project/.git')
-        node_modules_folder_exists = folderExists('tmp_test_project/node_modules')
-
-        assert.strictEqual(folder_exists, true)
-        assert.strictEqual(git_folder_exists, false)
-        assert.strictEqual(node_modules_folder_exists, false)
-        done()
-      }).catch(done)
-    })
-    it('fails if app directory doesnt exists', () => {
-      const promise = core.copyApplicationToTempLocation('/holabandola/', join(__dirname, 'tmp_test_project'))
-      return assert.isRejected(promise, /ENOENT: no such file or directory/)
-    })
-  })
-  describe('Write application Dockerfile', () => {
-    it('Can write Dockerfile file to disk', (done) => {
-      core.writeApplicationDockerfile(join(__dirname, 'test_project'), 'myversion', 'FROM dockerfile:$VERSION').then(() => {
-        const contentsOfFile = fs.readFileSync(join(__dirname, 'test_project/Dockerfile'))
-        assert.strictEqual(contentsOfFile.toString(), 'FROM dockerfile:myversion')
-        done()
-      }).catch(done)
-    })
-    it('Fails if directory doesnt exists already', () => {
-      const promise = core.writeApplicationDockerfile('/holabandola', 'myversion', 'FROM dockerfile:$VERSION')
-      return assert.isRejected(promise, /Directory \"\/holabandola\" did not exist/)
-    })
-    it('Fails if Dockerfile doesnt contain $VERSION string', () => {
-      const promise = core.writeApplicationDockerfile(join(__dirname, 'test_project'), 'myversion', 'FROM dockerfile:$DOCKER')
-      return assert.isRejected(promise, /Dockerfile did not contain \$VERSION/)
-    })
-  })
   describe('Pulling a image', () => {
+    const pull_opts = {
+      docker: createDockerMock(),
+      base_image: 'small/image',
+      version: 'myversion',
+      verbose: false
+    }
     it('Pull an image with docker', () => {
-      return assert.isFulfilled(core.pullImage(docker_mock, 'small/image', 'myversion', false))
+      return assert.isFulfilled(core.pullImage(pull_opts))
     })
     it('Can fail while pulling image', () => {
       docker_mock_error_value = new Error('Something went wrong')
-      return assert.isRejected(core.pullImage(docker_mock, 'small/image', 'myversion', false), /Something went wrong/)
+      return assert.isRejected(core.pullImage(pull_opts), /Something went wrong/)
     })
     xit('Logs data if wanted')
   })
   describe('Building a image', () => {
+    const build_opts = {
+      docker: createDockerMock(),
+      path: join(__dirname, 'test_project'),
+      image_name: 'my/image',
+      dockerfile: 'dockerfile',
+      verbose: false
+    }
     beforeEach(writeTestProject)
     it('Builds a image from path', () => {
-      return assert.isFulfilled(core.buildImage(docker_mock, join(__dirname, 'test_project'), 'my/image', false))
+      return assert.isFulfilled(core.buildImage(build_opts))
     })
     it('Build fails if directory does not exists', () => {
-      return assert.isRejected(core.buildImage(docker_mock, join(__dirname, 'not_existing'), 'my/image', false))
+      build_opts.path = '/somemadeuppath/'
+      const promise = assert.isRejected(core.buildImage(build_opts))
+      build_opts.path = join(__dirname, 'test_project')
+      return promise
     })
     it('Can fail while building image', () => {
       docker_mock_error_value = new Error('Something went wrong')
       return assert.isRejected(
-        core.buildImage(docker_mock, join(__dirname, 'test_project'), 'small/image', 'myversion', false),
+        core.buildImage(build_opts),
         /Something went wrong/
       )
     })
   })
   describe('Run a container', () => {
+    const run_opts = {
+      docker: createDockerMock(),
+      image_name: 'my/image',
+      test_cmd: ['whoami'],
+      verbose: false
+    }
     it('Runs a container', () => {
-      return assert.isFulfilled(core.runContainer(docker_mock, 'my/image', ['whoami'], false))
+      return assert.isFulfilled(core.runContainer(run_opts))
     })
     it('Tells when the command succeeded', (done) => {
       docker_mock_run_statuscode = 0
-      core.runContainer(docker_mock, 'my/image', ['whoami'], false).then((res) => {
+      core.runContainer(run_opts).then((res) => {
         assert.strictEqual(res.success, true)
         done()
       }).catch(done)
     })
     it('Tells when the command fails', (done) => {
       docker_mock_run_statuscode = 1
-      core.runContainer(docker_mock, 'my/image', ['whoami'], false).then((res) => {
+      core.runContainer(run_opts).then((res) => {
         assert.strictEqual(res.success, false)
         done()
       }).catch(done)
@@ -165,7 +136,7 @@ describe('Application Core Logic', () => {
     const testRun = () => {
       return core.runTestForVersion({
         logger: () => { /* logger */ },
-        docker: docker_mock,
+        docker: createDockerMock(),
         version: '1.1.1',
         name: 'myproject',
         test_cmd: ['whoami'],
