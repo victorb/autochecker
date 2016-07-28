@@ -201,7 +201,7 @@ const testVersions = (versions) => {
   })
 }
 
-const argv = require('minimist')(process.argv.slice(2))
+const argv = require('minimist')(process.argv.slice(2), { string: '_' })
 
 const cmds = {
   'ls': () => {
