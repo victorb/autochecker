@@ -37,7 +37,7 @@
     "colors": "1.1.2",
     "dockerode": "2.2.10",
     "fs-extra": "0.26.7",
-    "minimist": "1.2.0",
+    "minimist": "1.2.5",
     "shortid": "2.2.6",
     "tar-fs": "1.12.0"
   },
